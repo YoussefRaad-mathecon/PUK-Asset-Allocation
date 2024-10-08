@@ -22,7 +22,7 @@ library(matrixStats) ### ColSds
 ####################################################################################################################
 ####################################################################################################################
 set.seed(123)
-# setwd("C:/Users/youss/OneDrive - University of Copenhagen/PUK")
+setwd("C:/Users/youss/OneDrive - University of Copenhagen/PUK")
 
 ####################################################################################################################
 ####################################################################################################################
@@ -46,6 +46,7 @@ colnames(MOMdep) <- c("Date", "SMALL LoPRIOR", "ME1 PRIOR2", "ME1 PRIOR3", "ME1 
                       "ME4 PRIOR1", "ME4 PRIOR2", "ME4 PRIOR3", "ME4 PRIOR4", "ME4 PRIOR5",
                       "BIG LoPRIOR", "ME5 PRIOR2", "ME5 PRIOR3", "ME5 PRIOR4", "BIG HiPRIOR")
 head(MOMdep)
+
 
 ####################################################################################################################
 ####################################################################################################################
@@ -76,18 +77,7 @@ head(TSYdata)
 TSYdata_clean <- TSYdata[, c("X1.Mo", "X2.Mo", "X3.Mo", "X4.Mo", "X6.Mo", 
                          "X1.Yr", "X2.Yr", "X3.Yr", "X5.Yr", "X7.Yr", 
                          "X10.Yr", "X20.Yr", "X30.Yr")]
-length(TSYdata_clean)
-length(mat)
-### Define the present value function
-PV <- function(C, Y, T) {
-  ### Ensure yields are in decimal form
-  Y <- Y / 100
-  t_j <- seq(1, T)  ### Payment dates (annual coupon payments, i.e. 1Y)
-  
-  ### Calculate the present value for coupon payments
-  PV_value <- sum((C / (1 + Y) ^ t_j) + (1 / (1 + Y) ^ T))
-  return(PV_value)
-}
+
 
 ### Initialize an empty data frame to hold the returns
 MonthlyReturn <- data.frame(Date = TSYdata$Date)  ### Dates for the new returns, minus the first row with return zero
@@ -105,7 +95,6 @@ mat <- c(1/12, 2/12, 3/12, 4/12, 6/12, 1, 2, 3, 5, 7, 10, 20, 30)  # Maturities
 # Define the present value function
 PV <- function(C, Y, T) {
   # Ensure yields are in decimal form
-  
   # Payment dates (annual coupon payments, i.e. 1Y steps)
   t_j <- seq(1, T)
   
@@ -170,4 +159,4 @@ test_PV <- function(C, T) {
   return(PV(C, C, T))
 }
 # Run the test with C = 5% and T = 10 years
-test_PV(5, 10)
+test_PV(0.05, 10)
