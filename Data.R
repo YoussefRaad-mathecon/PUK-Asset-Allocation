@@ -108,7 +108,6 @@ mat <- c(1/12, 2/12, 3/12, 4/12, 6/12, 1, 2, 3, 5, 7, 10, 20, 30)  # Maturities
 # Define the present value function
 PV <- function(C, Y, T) {
   # Ensure yields are in decimal form
-  Y <- Y / 100
   
   # Payment dates (annual coupon payments, i.e. 1Y steps)
   t_j <- seq(1, T)
@@ -174,4 +173,4 @@ test_PV <- function(C, T) {
   return(PV(C, C, T))
 }
 # Run the test with C = 5% and T = 10 years
-test_PV(0.05, 10)
+test_PV(5, 10)
