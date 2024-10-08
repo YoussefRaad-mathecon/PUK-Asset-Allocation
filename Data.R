@@ -105,21 +105,21 @@ TSYdata_clean <- TSYdata[, c("X1.Mo", "X2.Mo", "X3.Mo", "X4.Mo", "X6.Mo",
 
 mat <- c(1/12, 2/12, 3/12, 4/12, 6/12, 1, 2, 3, 5, 7, 10, 20, 30)  # Maturities
 
-# Define the present value function with flexibility for non-integer payment dates
+# Define the present value function
 PV <- function(C, Y, T) {
   # Ensure yields are in decimal form
   Y <- Y / 100
   
-  # Generate payment dates: assuming annual coupon payments with fractional years up to T
-  t_j <- seq(1, T, by = 1)  # These are the time steps for each payment
+  # Payment dates (annual coupon payments, i.e. 1Y steps)
+  t_j <- seq(1, T)
   
-  # Calculate the present value of the coupon payments
+  # Calculate the present value for coupon payments
   coupon_PV <- sum(C / (1 + Y) ^ t_j)
   
-  # Calculate the present value of the principal repayment (bullet bond) at maturity T
+  # Calculate the present value for the principal repayment at time T
   principal_PV <- 1 / (1 + Y) ^ T
   
-  # Total present value is the sum of coupon payments and principal repayment
+  # Total present value
   PV_value <- coupon_PV + principal_PV
   
   return(PV_value)
@@ -168,3 +168,10 @@ results <- data.frame(C = C_values, PV = sapply(C_values, function(C) PV(C, C, T
 print(results)
 
 
+
+# ...or manually test it
+test_PV <- function(C, T) {
+  return(PV(C, C, T))
+}
+# Run the test with C = 5% and T = 10 years
+test_PV(0.05, 10)
