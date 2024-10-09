@@ -155,12 +155,14 @@ colSums(is.na(TSYdata))
 TSYdata_clean <- TSYdata[, c("X1.Mo", "X2.Mo", "X3.Mo", "X4.Mo", "X6.Mo", 
                              "X1.Yr", "X2.Yr", "X3.Yr", "X5.Yr", "X7.Yr", 
                              "X10.Yr", "X20.Yr", "X30.Yr")]
-# for some reason x2.Mo won't 
-TSYdata_clean$X2.Mo[is.na(TSYdata_clean$X2.Mo)] <- median(TSYdata_clean$X2.Mo, na.rm = TRUE)
 
+# OBS: for some reason x2.Mo won't remove NA's in X2.M0; suspect it is because of high missingness with high colinearity
 TSYdata_clean <- impute_data(TSYdata_clean)
 
-colSums(is.na(TSYdata_clean))
+# OBS: we can use median instead?! maybe + some bps depending on date?!
+TSYdata_clean$X2.Mo[is.na(TSYdata_clean$X2.Mo)] <- median(TSYdata_clean$X2.Mo, na.rm = TRUE)
+
+
 
 
 ####################################################################################################################
