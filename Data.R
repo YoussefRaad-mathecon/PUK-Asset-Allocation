@@ -25,13 +25,9 @@ library(lubridate)
 ####################################################################################################################
 
 
-setwd("~/Documents/KU/PUKAssetAllocation/Exam/RCode")
-
-
-
-
-
-
+set.seed(123)
+setwd("C:/Users/youss/OneDrive - University of Copenhagen/PUK")
+#setwd("~/Documents/KU/PUKAssetAllocation/Exam/RCode")
 
 
 ####################################################################################################################
@@ -47,7 +43,27 @@ head(FFdata)
 
 MOMexp <- read.csv("6_Portfolios_ME_Prior_12_2.CSV", header = FALSE, sep = ",", skip = 12, fill = TRUE, strip.white = TRUE)
 colnames(MOMexp) <- c("Date", "SMALL LoPRIOR", "ME1 PRIOR2", "SMALL HiPRIOR", "BIG LoPRIOR", "ME2 PRIOR2", "BIG HiPRIOR")
-head(MOMexp)
+
+
+#### Split into subsets of the CSV file 6_Portfolios_ME_Prior_12_2.CSV
+### Average Value Weighted Returns -- Monthly
+MOMexp_Average_Value_Weighted_Returns_Monthly <- MOMexp[1:1171,]
+### Average Equal Weighted Returns -- Monthly
+MOMexp_Average_Equal_Weighted_Returns_Monthly <- MOMexp[1174:2344,]
+### Average Value Weighted Returns -- Annual
+MOMexp_Average_Value_Weighted_Returns_Annual <- MOMexp[2347:2443,]
+### Average Equal Weighted Returns -- Annual
+MOMexp_Average_Equal_Weighted_Returns_Annual <- MOMexp[2446:2542,]
+### Number of Firms in Portfolios
+MOMexp_Number_of_Firms_in_Portfolios <- MOMexp[2545:3715,]
+### Average Firm Size
+MOMexp_Average_Firm_Size <- MOMexp[3718:4888,]
+### Equally-Weighted Average of Prior Returns
+MOMexp_Equally_Weighted_Average_of_Prior_Returns <- MOMexp[4891:6061,]
+### Value-Weighted Average of Prior Returns
+MOMexp_Value_Weighted_Average_of_Prior_Returns <- MOMexp[6064:7234,]
+
+
 
 MOMdep <- read.csv("25_Portfolios_ME_Prior_12_2.CSV", header = FALSE, sep = ",", skip = 12, fill = TRUE, strip.white = TRUE)
 colnames(MOMdep) <- c("Date", "SMALL LoPRIOR", "ME1 PRIOR2", "ME1 PRIOR3", "ME1 PRIOR4",
@@ -163,6 +179,7 @@ test_PV(0.05, 10)
 #---------------------------------- Monthly Returns ----------------------------------------------------------------
 ####################################################################################################################
 ####################################################################################################################
+
 ### Ensure the date column is in Date format
 TSYdata$Date <- as.Date(TSYdata$Date, format = "%m/%d/%y")
 
@@ -213,8 +230,6 @@ colnames(MonthlyReturn)[-1] <- colnames(MonthlyYields_clean)
 ### View the results
 head(MonthlyReturn)
 tail(MonthlyReturn)
-
-
 
 
 
