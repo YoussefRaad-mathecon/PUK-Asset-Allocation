@@ -14,15 +14,25 @@ library(matrixcalc) ### Matrix calculations
 library("RColorBrewer") ### Colors
 library(latex2exp) ### Text for plots
 library(matrixStats) ### ColSds
+library(dplyr)
+library(lubridate)
 
 
 ####################################################################################################################
 ####################################################################################################################
-#----------------------------------- Working Directory and seed -------------------------------------------------------------
+#----------------------------------- Working Directory -------------------------------------------------------------
 ####################################################################################################################
 ####################################################################################################################
-set.seed(123)
-setwd("C:/Users/youss/OneDrive - University of Copenhagen/PUK")
+
+
+setwd("~/Documents/KU/PUKAssetAllocation/Exam/RCode")
+
+
+
+
+
+
+
 
 ####################################################################################################################
 ####################################################################################################################
@@ -48,6 +58,8 @@ colnames(MOMdep) <- c("Date", "SMALL LoPRIOR", "ME1 PRIOR2", "ME1 PRIOR3", "ME1 
 head(MOMdep)
 
 
+
+
 ####################################################################################################################
 ####################################################################################################################
 #----------------------------------- US Treasury Data --------------------------------------------------------------
@@ -58,12 +70,91 @@ head(MOMdep)
 TSYdata <- read.csv("yield-curve-rates-1990-2023.csv", header = TRUE)
 head(TSYdata)
 
-MonthlyReturn <- numeric(length(TSYdata$X1.Mo))
-for (i in 2:length(TSYdata$X1.Mo)){
-  MonthlyReturn[i] <- TSYdata$X1.Mo[i - 1]/TSYdata$X1.Mo[i] - 1
+
+
+####################################################################################################################
+####################################################################################################################
+#------------------------------------ Daily Returns ----------------------------------------------------------------
+####################################################################################################################
+####################################################################################################################
+### Initialize an empty data frame to hold the returns
+DailyReturn <- data.frame(Date = TSYdata$Date)  ### Dates for the new returns, minus the first row with return zero
+
+### Subset the dataframe
+TSYdata_clean <- TSYdata[, c("X1.Mo", "X2.Mo", "X3.Mo", "X4.Mo", "X6.Mo", 
+                             "X1.Yr", "X2.Yr", "X3.Yr", "X5.Yr", "X7.Yr", 
+                             "X10.Yr", "X20.Yr", "X30.Yr")]
+
+mat <- c(1/12, 2/12, 3/12, 4/12, 6/12, 1, 2, 3, 5, 7, 10, 20, 30) ### Maturities
+
+
+### Define the present value function
+PV <- function(C, Y, T) {
+  ### Ensure yields are in decimal form
+  ### Payment dates (annual coupon payments, i.e. 1Y steps)
+  t_j <- seq(1, T)
+  
+  ### Calculate the present value for coupon payments
+  coupon_PV <- sum(C / (1 + Y) ^ t_j)
+  
+  ### Calculate the present value for the principal repayment at time T
+  principal_PV <- 1 / (1 + Y) ^ T
+  
+  ### Total present value
+  PV_value <- coupon_PV + principal_PV
+  
+  return(PV_value)
 }
-TSYdata$MR <- MonthlyReturn
-head(TSYdata)
+
+
+### Loop through each row to calculate the monthly returns
+for (i in 2:nrow(TSYdata_clean)) {
+  for (j in 1:ncol(TSYdata_clean)) {   ### Use TSYdata_clean (without Date and MR) for looping through yields
+    Y_prev <- TSYdata_clean[i - 1, j]  ### Previous period yield
+    Y_current <- TSYdata_clean[i, j]   ### Current period yield
+    
+    T <- mat[j]  ### Use correct indexing for maturities (no need to adjust by -1)
+    
+    ### Calculate present values for Y_prev and Y_current
+    PV_Y_current <- PV(Y_prev, Y_current, T - 1/12)  ### PV(Y_{i-1}; Y_i, T - 1M)
+    PV_Y_prev <- PV(Y_prev, Y_prev, T)               ### PV(Y_{i-1}; Y_{i-1}, T)
+    
+    ### Calculate the return using the formula
+    r_i <- (PV_Y_current / PV_Y_prev) - 1
+    
+    ### Store the return in the new data frame
+    DailyReturn[i, j + 1] <- r_i  ### j + 1 to account for the Date column
+  }
+}
+
+### Name the columns of the returns data frame
+colnames(DailyReturn)[-1] <- colnames(TSYdata_clean)
+
+### View the results
+head(DailyReturn)
+
+### Test the PV function for 100 different values of C > -1
+C_values <- runif(100, min = -0.99, max = 5)  # Generate 100 random C values greater than -1
+
+### Integer value of T (e.g., T = 5 years)
+T <- 5
+
+### Apply the PV function for C = Y over the 100 different values of C
+results <- data.frame(C = C_values, PV = sapply(C_values, function(C) PV(C, C, T)))
+
+### Print the results
+print(results)
+
+
+
+### ...or manually test it
+test_PV <- function(C, T) {
+  return(PV(C, C, T))
+}
+### Run the test with C = 5% and T = 10 years
+test_PV(0.05, 10)
+
+
 
 
 
@@ -72,91 +163,83 @@ head(TSYdata)
 #---------------------------------- Monthly Returns ----------------------------------------------------------------
 ####################################################################################################################
 ####################################################################################################################
+### Ensure the date column is in Date format
+TSYdata$Date <- as.Date(TSYdata$Date, format = "%m/%d/%y")
 
-# Subset the dataframe
-TSYdata_clean <- TSYdata[, c("X1.Mo", "X2.Mo", "X3.Mo", "X4.Mo", "X6.Mo", 
-                         "X1.Yr", "X2.Yr", "X3.Yr", "X5.Yr", "X7.Yr", 
-                         "X10.Yr", "X20.Yr", "X30.Yr")]
+
+MonthlyYields <- TSYdata %>%
+  mutate(YnM = floor_date(Date, "month")) %>%
+  group_by(YnM) %>%
+  slice(n()) %>%  ### Get the last row for each month
+  ungroup() %>%
+
+
+MonthlyYields <- TSYdata %>%
+  mutate(YnM = floor_date(Date, "month")) %>%
+  filter(!is.na(X1.Mo) & !is.na(X2.Mo) & !is.na(X3.Mo) & !is.na(X4.Mo) & 
+           !is.na(X6.Mo) & !is.na(X1.Yr) & !is.na(X2.Yr) & !is.na(X3.Yr) & 
+           !is.na(X5.Yr) & !is.na(X7.Yr) & !is.na(X10.Yr) & !is.na(X20.Yr) & 
+           !is.na(X30.Yr)) %>%  ### Filter out rows with NA values in the relevant columns
+  group_by(YnM) %>%
+  slice(n()) %>%  ### Get the last row for each month
+  ungroup() %>%
+  arrange(desc(YnM))
 
 
 ### Initialize an empty data frame to hold the returns
-MonthlyReturn <- data.frame(Date = TSYdata$Date)  ### Dates for the new returns, minus the first row with return zero
+MonthlyReturn <- data.frame(Date = MonthlyYields$Date)  ### Dates for the new returns, minus the first row with return zero
+
+### Subset the dataframe
+MonthlyYields_clean <- MonthlyYields[, c("X1.Mo", "X2.Mo", "X3.Mo", "X4.Mo", "X6.Mo", 
+                             "X1.Yr", "X2.Yr", "X3.Yr", "X5.Yr", "X7.Yr", 
+                             "X10.Yr", "X20.Yr", "X30.Yr")]
 
 mat <- c(1/12, 2/12, 3/12, 4/12, 6/12, 1, 2, 3, 5, 7, 10, 20, 30) ### Maturities
 
 
-# Subset the dataframe
-TSYdata_clean <- TSYdata[, c("X1.Mo", "X2.Mo", "X3.Mo", "X4.Mo", "X6.Mo", 
-                             "X1.Yr", "X2.Yr", "X3.Yr", "X5.Yr", "X7.Yr", 
-                             "X10.Yr", "X20.Yr", "X30.Yr")]
-
-mat <- c(1/12, 2/12, 3/12, 4/12, 6/12, 1, 2, 3, 5, 7, 10, 20, 30)  # Maturities
-
-# Define the present value function
-PV <- function(C, Y, T) {
-  # Ensure yields are in decimal form
-  # Payment dates (annual coupon payments, i.e. 1Y steps)
-  t_j <- seq(1, T)
-  
-  # Calculate the present value for coupon payments
-  coupon_PV <- sum(C / (1 + Y) ^ t_j)
-  
-  # Calculate the present value for the principal repayment at time T
-  principal_PV <- 1 / (1 + Y) ^ T
-  
-  # Total present value
-  PV_value <- coupon_PV + principal_PV
-  
-  return(PV_value)
-}
-
-
-# Initialize an empty data frame to hold the returns
-MonthlyReturn <- data.frame(Date = TSYdata$Date)  # Dates for the new returns, minus the first row with return zero
-
-# Loop through each row to calculate the monthly returns
-for (i in 2:nrow(TSYdata_clean)) {
-  for (j in 1:ncol(TSYdata_clean)) {  # Use TSYdata_clean (without Date and MR) for looping through yields
-    Y_prev <- TSYdata_clean[i - 1, j]  # Previous period yield
-    Y_current <- TSYdata_clean[i, j]   # Current period yield
+### Loop through each row to calculate the monthly returns
+for (i in 2:nrow(MonthlyYields_clean)) {
+  for (j in 1:ncol(MonthlyYields_clean)) {   ### Use TSYdata_clean (without Date and MR) for looping through yields
+    Y_prev <- MonthlyYields_clean[i - 1, j]  ### Previous period yield
+    Y_current <- MonthlyYields_clean[i, j]   ### Current period yield
     
-    T <- mat[j]  # Use correct indexing for maturities (no need to adjust by -1)
+    T <- mat[j]  ### Use correct indexing for maturities (no need to adjust by -1)
     
-    # Calculate present values for Y_prev and Y_current
-    PV_Y_current <- PV(Y_prev, Y_current, T - 1/12)  # PV(Y_{i-1}; Y_i, T - 1M)
-    PV_Y_prev <- PV(Y_prev, Y_prev, T)               # PV(Y_{i-1}; Y_{i-1}, T)
+    ### Calculate present values for Y_prev and Y_current
+    PV_Y_current <- PV(Y_prev, Y_current, T - 1/12)  ### PV(Y_{i-1}; Y_i, T - 1M)
+    PV_Y_prev <- PV(Y_prev, Y_prev, T)               ### PV(Y_{i-1}; Y_{i-1}, T)
     
-    # Calculate the return using the formula
+    ### Calculate the return using the formula
     r_i <- (PV_Y_current / PV_Y_prev) - 1
     
-    # Store the return in the new data frame
-    MonthlyReturn[i, j + 1] <- r_i  # j + 1 to account for the Date column
+    ### Store the return in the new data frame
+    MonthlyReturn[i - 1, j + 1] <- r_i  ### j + 1 to account for the Date column
   }
 }
 
-# Name the columns of the returns data frame
-colnames(MonthlyReturn)[-1] <- colnames(TSYdata_clean)
+### Name the columns of the returns data frame
+colnames(MonthlyReturn)[-1] <- colnames(MonthlyYields_clean)
 
-# View the results
+### View the results
 head(MonthlyReturn)
 
-# Test the PV function for 100 different values of C > -1
+### Test the PV function for 100 different values of C > -1
 C_values <- runif(100, min = -0.99, max = 5)  # Generate 100 random C values greater than -1
 
-# Integer value of T (e.g., T = 5 years)
+### Integer value of T (e.g., T = 5 years)
 T <- 5
 
-# Apply the PV function for C = Y over the 100 different values of C
+### Apply the PV function for C = Y over the 100 different values of C
 results <- data.frame(C = C_values, PV = sapply(C_values, function(C) PV(C, C, T)))
 
-# Print the results
+### Print the results
 print(results)
 
 
 
-# ...or manually test it
+### ...or manually test it
 test_PV <- function(C, T) {
   return(PV(C, C, T))
 }
-# Run the test with C = 5% and T = 10 years
+### Run the test with C = 5% and T = 10 years
 test_PV(0.05, 10)
