@@ -170,20 +170,10 @@ TSYdata$Date <- as.Date(TSYdata$Date, format = "%m/%d/%y")
 MonthlyYields <- TSYdata %>%
   mutate(YnM = floor_date(Date, "month")) %>%
   group_by(YnM) %>%
-  slice(n()) %>%  ### Get the last row for each month
+  slice_head(n = 1) %>%  ### Get the first row for each month (which is the last date of the month)
   ungroup() %>%
+  arrange(YnM)  ### Optionally, sort by month for better readability
 
-
-MonthlyYields <- TSYdata %>%
-  mutate(YnM = floor_date(Date, "month")) %>%
-  filter(!is.na(X1.Mo) & !is.na(X2.Mo) & !is.na(X3.Mo) & !is.na(X4.Mo) & 
-           !is.na(X6.Mo) & !is.na(X1.Yr) & !is.na(X2.Yr) & !is.na(X3.Yr) & 
-           !is.na(X5.Yr) & !is.na(X7.Yr) & !is.na(X10.Yr) & !is.na(X20.Yr) & 
-           !is.na(X30.Yr)) %>%  ### Filter out rows with NA values in the relevant columns
-  group_by(YnM) %>%
-  slice(n()) %>%  ### Get the last row for each month
-  ungroup() %>%
-  arrange(desc(YnM))
 
 
 ### Initialize an empty data frame to hold the returns
@@ -222,24 +212,9 @@ colnames(MonthlyReturn)[-1] <- colnames(MonthlyYields_clean)
 
 ### View the results
 head(MonthlyReturn)
-
-### Test the PV function for 100 different values of C > -1
-C_values <- runif(100, min = -0.99, max = 5)  # Generate 100 random C values greater than -1
-
-### Integer value of T (e.g., T = 5 years)
-T <- 5
-
-### Apply the PV function for C = Y over the 100 different values of C
-results <- data.frame(C = C_values, PV = sapply(C_values, function(C) PV(C, C, T)))
-
-### Print the results
-print(results)
+tail(MonthlyReturn)
 
 
 
-### ...or manually test it
-test_PV <- function(C, T) {
-  return(PV(C, C, T))
-}
-### Run the test with C = 5% and T = 10 years
-test_PV(0.05, 10)
+
+
