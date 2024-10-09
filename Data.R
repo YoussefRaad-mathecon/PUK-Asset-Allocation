@@ -24,8 +24,8 @@ library(mice) ### Single imputation
 ####################################################################################################################
 
 
-#set.seed(123)
-#setwd("C:/Users/youss/OneDrive - University of Copenhagen/PUK")
+set.seed(123)
+setwd("C:/Users/youss/OneDrive - University of Copenhagen/PUK")
 
 
 ####################################################################################################################
@@ -33,7 +33,6 @@ library(mice) ### Single imputation
 #-------------------------- Kenneth R French Data Library Data -----------------------------------------------------
 ####################################################################################################################
 ####################################################################################################################
-# Function to impute missing values for a dataset
 # Function to convert character columns to numeric and impute missing values
 impute_data <- function(data) {
   # Convert character columns to numeric
@@ -41,7 +40,7 @@ impute_data <- function(data) {
   
   # Check for missing values and impute if necessary
   if (anyNA(data)) {
-    imputed_data <- mice(data, m = 1, method = 'pmm', maxit = 5, seed = 123)
+    imputed_data <- mice(data, m = 1, method = 'pmm', maxit = 50, seed = 123)
     data <- complete(imputed_data)
   }
   
@@ -156,8 +155,13 @@ colSums(is.na(TSYdata))
 TSYdata_clean <- TSYdata[, c("X1.Mo", "X2.Mo", "X3.Mo", "X4.Mo", "X6.Mo", 
                              "X1.Yr", "X2.Yr", "X3.Yr", "X5.Yr", "X7.Yr", 
                              "X10.Yr", "X20.Yr", "X30.Yr")]
+# for some reason x2.Mo won't 
+TSYdata_clean$X2.Mo[is.na(TSYdata_clean$X2.Mo)] <- median(TSYdata_clean$X2.Mo, na.rm = TRUE)
 
 TSYdata_clean <- impute_data(TSYdata_clean)
+
+colSums(is.na(TSYdata_clean))
+
 
 ####################################################################################################################
 ####################################################################################################################
@@ -166,7 +170,6 @@ TSYdata_clean <- impute_data(TSYdata_clean)
 ####################################################################################################################
 ### Initialize an empty data frame to hold the returns
 DailyReturn <- data.frame(Date = TSYdata$Date)  ### Dates for the new returns, minus the first row with return zero
-
 
 
 mat <- c(1/12, 2/12, 3/12, 4/12, 6/12, 1, 2, 3, 5, 7, 10, 20, 30) ### Maturities
@@ -298,5 +301,8 @@ colnames(MonthlyReturn)[-1] <- colnames(MonthlyYields_clean)
 ### View the results
 head(MonthlyReturn)
 tail(MonthlyReturn)
+
+
+
 
 
