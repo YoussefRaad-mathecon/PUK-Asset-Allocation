@@ -48,9 +48,10 @@ impute_data <- function(data) {
 }
 
 ### FF data
-FFdata <- read.csv("F-F_Research_Data_Factors.CSV", header = TRUE, sep = ",", skip = 2, fill = TRUE, strip.white = TRUE)
+FFdata <- read.csv("F-F_Research_Data_Factors.CSV", header = TRUE, sep = ",", skip = 3, fill = TRUE, strip.white = TRUE)
 colnames(FFdata) <- c("Date", "Mkt_RF", "SMB", "HML", "RF")
-FFdata <- FFdata[1:1276,] #remove copyright lines
+FFdata_Monthly_Factors <- FFdata[1:1177,] #remove copyright lines
+FFdata_Annual_Factors <- FFdata[1180:1276,]
 sum(is.na(FFdata)) # Na's 0
 
 
