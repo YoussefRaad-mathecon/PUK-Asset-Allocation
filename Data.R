@@ -33,9 +33,41 @@ setwd("C:/Users/youss/OneDrive - University of Copenhagen/PUK")
 #-------------------------- Kenneth R French Data Library Data -----------------------------------------------------
 ####################################################################################################################
 ####################################################################################################################
-# Function to convert character columns to numeric and impute missing values
+# Functions to convert character columns to numeric and impute missing values
 impute_data <- function(data) {
   # Convert all columns except the first to numeric
+  data[-1] <- lapply(data[-1], function(x) as.numeric(as.character(x)))
+  
+  # Check for missing values and impute if necessary
+  if (anyNA(data)) {
+    imputed_data <- mice(data, m = 1, method = 'pmm', maxit = 50, seed = 123)
+    data <- complete(imputed_data)
+  }
+  
+  return(data)
+}
+# YYYYMM format
+impute_data_monthly <- function(data) {
+  # Convert the first column (dates in YYYYMM) to Date format
+  data[[1]] <- as.Date(paste0(substr(data[[1]], 1, 4), "-", substr(data[[1]], 5, 6), "-01"))
+  
+  # Convert all other columns to numeric
+  data[-1] <- lapply(data[-1], function(x) as.numeric(as.character(x)))
+  
+  # Check for missing values and impute if necessary
+  if (anyNA(data)) {
+    imputed_data <- mice(data, m = 1, method = 'pmm', maxit = 50, seed = 123)
+    data <- complete(imputed_data)
+  }
+  
+  return(data)
+}
+# YYYY format
+impute_data_annual <- function(data) {
+  # Convert the first column (dates in YYYY) to numeric (to ensure it's a year)
+  data[[1]] <- as.numeric(as.character(data[[1]]))
+  
+  # Convert all other columns to numeric
   data[-1] <- lapply(data[-1], function(x) as.numeric(as.character(x)))
   
   # Check for missing values and impute if necessary
@@ -57,9 +89,11 @@ FFdata_Annual_Factors <- FFdata[1180:1276,]
 FFdata_Monthly_Factors[, 2:5] <- lapply(FFdata_Monthly_Factors[, 2:5], as.numeric)
 FFdata_Annual_Factors[, 2:5] <- lapply(FFdata_Annual_Factors[, 2:5], as.numeric)
 
+
 ### Portfolio data 6_Portfolios_ME_Prior_12_2.CSV
 MOMexp <- read.csv("6_Portfolios_ME_Prior_12_2.CSV", header = FALSE, sep = ",", skip = 12, fill = TRUE, strip.white = TRUE)
 colnames(MOMexp) <- c("Date", "SMALL LoPRIOR", "ME1 PRIOR2", "SMALL HiPRIOR", "BIG LoPRIOR", "ME2 PRIOR2", "BIG HiPRIOR")
+
 MOMexp[MOMexp == -99.99 | MOMexp == -9999] <- NA
 sum(is.na(MOMexp)) # 0 NA's
 
@@ -82,14 +116,14 @@ MOMexp_Equally_Weighted_Average_of_Prior_Returns <- MOMexp[4891:6061,]
 MOMexp_Value_Weighted_Average_of_Prior_Returns <- MOMexp[6064:7234,]
 
 # Impute missing values for each dataset
-MOMexp_Average_Value_Weighted_Returns_Monthly <- impute_data(MOMexp_Average_Value_Weighted_Returns_Monthly)
-MOMexp_Average_Equal_Weighted_Returns_Monthly <- impute_data(MOMexp_Average_Equal_Weighted_Returns_Monthly)
-MOMexp_Average_Value_Weighted_Returns_Annual <- impute_data(MOMexp_Average_Value_Weighted_Returns_Annual)
-MOMexp_Average_Equal_Weighted_Returns_Annual <- impute_data(MOMexp_Average_Equal_Weighted_Returns_Annual)
+MOMexp_Average_Value_Weighted_Returns_Monthly <- impute_data_monthly(MOMexp_Average_Value_Weighted_Returns_Monthly)
+MOMexp_Average_Equal_Weighted_Returns_Monthly <- impute_data_monthly(MOMexp_Average_Equal_Weighted_Returns_Monthly)
+MOMexp_Average_Value_Weighted_Returns_Annual <- impute_data_annual(MOMexp_Average_Value_Weighted_Returns_Annual)
+MOMexp_Average_Equal_Weighted_Returns_Annual <- impute_data_annual(MOMexp_Average_Equal_Weighted_Returns_Annual)
 MOMexp_Number_of_Firms_in_Portfolios <- impute_data(MOMexp_Number_of_Firms_in_Portfolios)
 MOMexp_Average_Firm_Size <- impute_data(MOMexp_Average_Firm_Size)
-MOMexp_Equally_Weighted_Average_of_Prior_Returns <- impute_data(MOMexp_Equally_Weighted_Average_of_Prior_Returns)
-MOMexp_Value_Weighted_Average_of_Prior_Returns <- impute_data(MOMexp_Value_Weighted_Average_of_Prior_Returns)
+MOMexp_Equally_Weighted_Average_of_Prior_Returns <- impute_data_monthly(MOMexp_Equally_Weighted_Average_of_Prior_Returns)
+MOMexp_Value_Weighted_Average_of_Prior_Returns <- impute_data_monthly(MOMexp_Value_Weighted_Average_of_Prior_Returns)
 
 
 ### Portfolio data 25_Portfolios_ME_Prior_12_2.CSV
@@ -129,14 +163,14 @@ MOMdep_Equally_Weighted_Average_of_Prior_Returns <- MOMexp[4891:6061,]
 MOMdep_Value_Weighted_Average_of_Prior_Returns <- MOMexp[6064:7234,]
 
 # Impute each dataset and overwrite the original for consistency
-MOMdep_Average_Value_Weighted_Returns_Monthly <- impute_data(MOMdep_Average_Value_Weighted_Returns_Monthly)
-MOMdep_Average_Equal_Weighted_Returns_Monthly <- impute_data(MOMdep_Average_Equal_Weighted_Returns_Monthly)
-MOMdep_Average_Value_Weighted_Returns_Annual <- impute_data(MOMdep_Average_Value_Weighted_Returns_Annual)
-MOMdep_Average_Equal_Weighted_Returns_Annual <- impute_data(MOMdep_Average_Equal_Weighted_Returns_Annual)
+MOMdep_Average_Value_Weighted_Returns_Monthly <- impute_data_monthly(MOMdep_Average_Value_Weighted_Returns_Monthly)
+MOMdep_Average_Equal_Weighted_Returns_Monthly <- impute_data_monthly(MOMdep_Average_Equal_Weighted_Returns_Monthly)
+MOMdep_Average_Value_Weighted_Returns_Annual <- impute_data_annual(MOMdep_Average_Value_Weighted_Returns_Annual)
+MOMdep_Average_Equal_Weighted_Returns_Annual <- impute_data_annual(MOMdep_Average_Equal_Weighted_Returns_Annual)
 MOMdep_Number_of_Firms_in_Portfolios <- impute_data(MOMdep_Number_of_Firms_in_Portfolios)
 MOMdep_Average_Firm_Size <- impute_data(MOMdep_Average_Firm_Size)
-MOMdep_Equally_Weighted_Average_of_Prior_Returns <- impute_data(MOMdep_Equally_Weighted_Average_of_Prior_Returns)
-MOMdep_Value_Weighted_Average_of_Prior_Returns <- impute_data(MOMdep_Value_Weighted_Average_of_Prior_Returns)
+MOMdep_Equally_Weighted_Average_of_Prior_Returns <- impute_data_monthly(MOMdep_Equally_Weighted_Average_of_Prior_Returns)
+MOMdep_Value_Weighted_Average_of_Prior_Returns <- impute_data_monthly(MOMdep_Value_Weighted_Average_of_Prior_Returns)
 
 
 
@@ -237,4 +271,8 @@ colnames(MonthlyReturn)[-1] <- colnames(MonthlyYields_clean)
 ### View the results
 head(MonthlyReturn)
 tail(MonthlyReturn)
+
+
+
+
 
