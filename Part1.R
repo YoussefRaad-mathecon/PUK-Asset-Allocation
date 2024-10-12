@@ -195,7 +195,7 @@ ggplot(FullPeriod, aes(x = Date, y = Cumulative_Return)) +
                breaks = as.Date(c("1990-01-01", "1995-01-01", "2000-01-01",
                                   "2005-01-01", "2010-01-01", "2015-01-01", "2020-01-01")))
 
-#--------------------------------------------------------------------------C--------------------------------------------------------------------------------------#
+#------------------------------------------------------C--------------------------------------------------------#
 # Define expected returns and covariances
 E_R_S <- mean(market_return) / 100  # Expected return for stocks
 E_R_B <- mean(Bonds, na.rm = TRUE)  # Expected return for bonds
@@ -227,9 +227,28 @@ optimal_weights <- result$solution
 optimal_return <- sum(optimal_weights * expected_returns)
 optimal_volatility <- sqrt(t(optimal_weights) %*% cov_matrix %*% optimal_weights)
 
-# pritn results
+# Print the optimal allocation, return, and risk
 cat("Optimal Weights for Stocks:", optimal_weights[1], "\n")
 cat("Optimal Weights for Bonds:", optimal_weights[2], "\n")
 cat("Optimal Portfolio Return:", optimal_return, "\n")
 cat("Optimal Portfolio Volatility:", optimal_volatility, "\n")
 
+#-------------------------------------------------d------------------------------------------------------------#
+# Allow 50% constraint, i.e. 1.5 weight
+bvec_leverage <- c(1.5, target_return)
+
+# Solve quadratic programming problem with leverage constraint 1.5 
+result_leverage <- solve.QP(Dmat, dvec, Amat, bvec_leverage, meq)
+
+# Extract portfolio weights with leverage
+optimal_weights_leverage <- result_leverage$solution
+
+# Calculate optimal portfolio return and risk (volatility) with leverage
+optimal_return_leverage <- sum(optimal_weights_leverage * expected_returns)
+optimal_volatility_leverage <- sqrt(t(optimal_weights_leverage) %*% cov_matrix %*% optimal_weights_leverage)
+
+# Poptimal results 1.5 leverage
+cat("Optimal Weights for Stocks with leverage 50%:", optimal_weights_leverage[1], "\n")
+cat("Optimal Weights for Bonds with leverage 50%:", optimal_weights_leverage[2], "\n")
+cat("Optimal Portfolio Return with leverage 50%:", optimal_return_leverage, "\n")
+cat("Optimal Portfolio Volatility with leverage 50%:", optimal_volatility_leverage, "\n")
