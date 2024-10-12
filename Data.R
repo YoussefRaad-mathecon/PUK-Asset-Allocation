@@ -93,27 +93,35 @@ FFdata_Annual_Factors[, 2:5] <- lapply(FFdata_Annual_Factors[, 2:5], as.numeric)
 ### Portfolio data 6_Portfolios_ME_Prior_12_2.CSV
 MOMexp <- read.csv("6_Portfolios_ME_Prior_12_2.CSV", header = FALSE, sep = ",", skip = 12, fill = TRUE, strip.white = TRUE)
 colnames(MOMexp) <- c("Date", "SMALL LoPRIOR", "ME1 PRIOR2", "SMALL HiPRIOR", "BIG LoPRIOR", "ME2 PRIOR2", "BIG HiPRIOR")
-
 MOMexp[MOMexp == -99.99 | MOMexp == -9999] <- NA
 sum(is.na(MOMexp)) # 0 NA's
 
-## Split into subsets of the CSV file 6_Portfolios_ME_Prior_12_2.CSV
-# Average Value Weighted Returns -- Monthly
-MOMexp_Average_Value_Weighted_Returns_Monthly <- MOMexp[1:1171,]
-# Average Equal Weighted Returns -- Monthly
-MOMexp_Average_Equal_Weighted_Returns_Monthly <- MOMexp[1174:2344,]
-# Average Value Weighted Returns -- Annual
-MOMexp_Average_Value_Weighted_Returns_Annual <- MOMexp[2347:2443,]
-# Average Equal Weighted Returns -- Annual
-MOMexp_Average_Equal_Weighted_Returns_Annual <- MOMexp[2446:2542,]
-# Number of Firms in Portfolios
-MOMexp_Number_of_Firms_in_Portfolios <- MOMexp[2545:3715,]
-# Average Firm Size
-MOMexp_Average_Firm_Size <- MOMexp[3718:4888,]
-# Equally-Weighted Average of Prior Returns
-MOMexp_Equally_Weighted_Average_of_Prior_Returns <- MOMexp[4891:6061,]
-# Value-Weighted Average of Prior Returns
-MOMexp_Value_Weighted_Average_of_Prior_Returns <- MOMexp[6064:7234,]
+
+# Subsetting with row index reset for each subset
+MOMexp_Average_Value_Weighted_Returns_Monthly <- MOMexp[1:1171, ]
+row.names(MOMexp_Average_Value_Weighted_Returns_Monthly) <- NULL
+
+MOMexp_Average_Equal_Weighted_Returns_Monthly <- MOMexp[1174:2344, ]
+row.names(MOMexp_Average_Equal_Weighted_Returns_Monthly) <- NULL
+
+MOMexp_Average_Value_Weighted_Returns_Annual <- MOMexp[2347:2443, ]
+row.names(MOMexp_Average_Value_Weighted_Returns_Annual) <- NULL
+
+MOMexp_Average_Equal_Weighted_Returns_Annual <- MOMexp[2446:2542, ]
+row.names(MOMexp_Average_Equal_Weighted_Returns_Annual) <- NULL
+
+MOMexp_Number_of_Firms_in_Portfolios <- MOMexp[2545:3715, ]
+row.names(MOMexp_Number_of_Firms_in_Portfolios) <- NULL
+
+MOMexp_Average_Firm_Size <- MOMexp[3718:4888, ]
+row.names(MOMexp_Average_Firm_Size) <- NULL
+
+MOMexp_Equally_Weighted_Average_of_Prior_Returns <- MOMexp[4891:6061, ]
+row.names(MOMexp_Equally_Weighted_Average_of_Prior_Returns) <- NULL
+
+MOMexp_Value_Weighted_Average_of_Prior_Returns <- MOMexp[6064:7234, ]
+row.names(MOMexp_Value_Weighted_Average_of_Prior_Returns) <- NULL
+
 
 # Impute missing values for each dataset
 MOMexp_Average_Value_Weighted_Returns_Monthly <- impute_data_monthly(MOMexp_Average_Value_Weighted_Returns_Monthly)
@@ -223,8 +231,7 @@ PV <- function(C, Y, T) {
 }
 
 
-
-## something is wrong hereeeeee
+## something is wrong here
 MonthlyYields <- TSYdata %>%
   mutate(YnM = floor_date(Date, "month")) %>%
   group_by(YnM) %>%
@@ -233,46 +240,51 @@ MonthlyYields <- TSYdata %>%
   arrange(YnM)  ### Optionally, sort by month for better readability
 
 
+# Filter the data 1990-01-02 to 1990-01-31
+TSYdata_1990_Jan <- TSYdata %>%
+  filter(Date >= as.Date("1990-01-02") & Date <= as.Date("1990-01-31"))
 
-### Initialize an empty data frame to hold the returns
-MonthlyReturn <- data.frame(Date = MonthlyYields$Date)  ### Dates for the new returns, minus the first row with return zero
-
-### Subset the dataframe
+# Calculate the mean for each bond
+avg_1990_Jan <- colMeans(TSYdata_1990_Jan[, c("X1.Mo", "X2.Mo", "X3.Mo", "X4.Mo", "X6.Mo", 
+                                              "X1.Yr", "X2.Yr", "X3.Yr", "X5.Yr", "X7.Yr", 
+                                              "X10.Yr", "X20.Yr", "X30.Yr")], na.rm = TRUE)
+avg_1990_Jan <- avg_1990_Jan/100
+# Remove date
 MonthlyYields_clean <- MonthlyYields[, c("X1.Mo", "X2.Mo", "X3.Mo", "X4.Mo", "X6.Mo", 
-                             "X1.Yr", "X2.Yr", "X3.Yr", "X5.Yr", "X7.Yr", 
-                             "X10.Yr", "X20.Yr", "X30.Yr")]
+                                         "X1.Yr", "X2.Yr", "X3.Yr", "X5.Yr", "X7.Yr", 
+                                         "X10.Yr", "X20.Yr", "X30.Yr")]
 
-mat <- c(1/12, 2/12, 3/12, 4/12, 6/12, 1, 2, 3, 5, 7, 10, 20, 30) ### Maturities
+mat <- c(1/12, 2/12, 3/12, 4/12, 6/12, 1, 2, 3, 5, 7, 10, 20, 30)  # Maturities
 
+# Initialize the MonthlyReturn data frame
+MonthlyReturn <- data.frame(Date = MonthlyYields$Date)
 
-### Loop through each row to calculate the monthly returns
+# Loop through each row to calculate the monthly returns (starting from the second row)
 for (i in 2:nrow(MonthlyYields_clean)) {
-  for (j in 1:ncol(MonthlyYields_clean)) {   ### Use TSYdata_clean (without Date and MR) for looping through yields
-    Y_prev <- MonthlyYields_clean[i - 1, j]  ### Previous period yield
-    Y_current <- MonthlyYields_clean[i, j]   ### Current period yield
+  for (j in 1:ncol(MonthlyYields_clean)) {   # Loop through each maturity column
+    Y_prev <- MonthlyYields_clean[i - 1, j]  # Previous period yield
+    Y_current <- MonthlyYields_clean[i, j]   # Current period yield
     
-    T <- mat[j]  ### Use correct indexing for maturities (no need to adjust by -1)
+    T <- mat[j]  # Maturity for the current column
     
-    ### Calculate present values for Y_prev and Y_current
-    PV_Y_current <- PV(Y_prev, Y_current, T - 1/12)  ### PV(Y_{i-1}; Y_i, T - 1M)
-    PV_Y_prev <- PV(Y_prev, Y_prev, T)               ### PV(Y_{i-1}; Y_{i-1}, T)
+    # Calculate present values
+    PV_Y_current <- PV(Y_prev, Y_current, T - 1/12)  # PV(Y_{i-1}; Y_i, T - 1M)
+    PV_Y_prev <- PV(Y_prev, Y_prev, T)               # PV(Y_{i-1}; Y_{i-1}, T)
     
-    ### Calculate the return using the formula
+    # Calculate the return
     r_i <- (PV_Y_current / PV_Y_prev) - 1
     
-    ### Store the return in the new data frame
-    MonthlyReturn[i - 1, j + 1] <- r_i  ### j + 1 to account for the Date column
+    # Store the return in the MonthlyReturn data frame
+    MonthlyReturn[i, j + 1] <- r_i  # Adjust for the Date column
   }
 }
 
-### Name the columns of the returns data frame
+# Name the columns of MonthlyReturn to match MonthlyYields_clean
 colnames(MonthlyReturn)[-1] <- colnames(MonthlyYields_clean)
+
+# Replace the first row of MonthlyReturn with the averages calculated from 1990-01-02 to 1990-01-31
+MonthlyReturn[1, -1] <- avg_1990_Jan
 
 ### View the results
 head(MonthlyReturn)
 tail(MonthlyReturn)
-
-
-
-
-
