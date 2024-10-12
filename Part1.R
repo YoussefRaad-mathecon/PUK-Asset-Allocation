@@ -193,5 +193,41 @@ ggplot(FullPeriod, aes(x = Date, y = Cumulative_Return)) +
                breaks = as.Date(c("1990-01-01", "1995-01-01", "2000-01-01",
                                   "2005-01-01", "2010-01-01", "2015-01-01", "2020-01-01")))
 
+#--------------------------------------------------------------------------C--------------------------------------------------------------------------------------#
+# Define expected returns and covariances
+E_R_S <- mean(market_return) / 100  # Expected return for stocks
+E_R_B <- mean(Bonds, na.rm = TRUE)  # Expected return for bonds
+sigma_S <- sd(market_return, na.rm = TRUE) / 100  # Volatility of stocks
+sigma_B <- sd(Bonds, na.rm = TRUE)  # Volatility of bonds
+covariance <- cov(market_return / 100, Bonds, use = "pairwise.complete.obs")
 
+# Define covar matrix for the assets
+cov_matrix <- matrix(c(sigma_S^2, covariance, covariance, sigma_B^2), nrow = 2)
+
+# Define expected returns vector
+expected_returns <- c(E_R_S, E_R_B)
+
+
+# Minimize portfolio variance/risk s.t. to expected return = target_return
+Dmat <- cov_matrix  # Covar Matrix
+dvec <- rep(0, 2)  # Zero vector since we're minimizing risk
+Amat <- cbind(1, expected_returns)  # Constraints matrix -> 1 for sum of weights, expected returns
+bvec <- c(1, target_return)  # Constraints vector: weights sum to 1, return = target_return
+meq <- 1  # First constraint is equality (weights sum to 1)
+
+# Solve quadratic programming problem
+result <- solve.QP(Dmat, dvec, Amat, bvec, meq)
+
+# Extract portfolio weights
+optimal_weights <- result$solution
+
+# Calculate optimal portfolio return and risk (volatility)
+optimal_return <- sum(optimal_weights * expected_returns)
+optimal_volatility <- sqrt(t(optimal_weights) %*% cov_matrix %*% optimal_weights)
+
+# Print the optimal allocation, return, and risk
+cat("Optimal Weights for Stocks:", optimal_weights[1], "\n")
+cat("Optimal Weights for Bonds:", optimal_weights[2], "\n")
+cat("Optimal Portfolio Return:", optimal_return, "\n")
+cat("Optimal Portfolio Volatility:", optimal_volatility, "\n")
 
