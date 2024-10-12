@@ -226,6 +226,22 @@ cat("Optimal Portfolio Volatility with leverage 50%:", optimal_volatility_levera
 
 ####################################################################################################################
 ####################################################################################################################
+#---------------------------------------- E ------------------------------------------------------------------------
+####################################################################################################################
+####################################################################################################################
+
+
+
+
+
+
+
+
+
+
+
+####################################################################################################################
+####################################################################################################################
 #---------------------------------------- F ------------------------------------------------------------------------
 ####################################################################################################################
 ####################################################################################################################
@@ -234,7 +250,7 @@ FullPeriod <- data.frame(
   "Date" = FFdata_Monthly_Factors$Date[757:1164],
   "RF" = FFdata_Monthly_Factors$RF[757:1164],
   "Bonds" = Bonds,
-  "Equity" = market_return)
+  "Equity" = market_return/100)
 row.names(FullPeriod) <- NULL
 FullPeriod$Date <- as.Date(paste0(FullPeriod$Date, "01"), format = "%Y%m%d")
 
@@ -266,6 +282,245 @@ Covid$Date <- format(Covid$Date, "%Y-%m")
 FullPeriod$Date <- format(FullPeriod$Date, "%Y-%m")
 
 
+###################################### Full Period Plot ########################################
+
+# Convert Date to factor to keep it as "YYYY-MM"
+FullPeriod$Date <- factor(FullPeriod$Date)
+# Get labels for every 5th year (e.g., "1990-01", "1995-01", etc.)
+FullPeriodBreaks <- FullPeriod$Date[seq(1, length(FullPeriod$Date), by = 12 * 5)]  # every 5 years
+
+# Backtest: 60% in RF and 40% in Bonds
+FullPeriod <- FullPeriod %>%
+  mutate(Strategy_60_40 = 0.6 * Equity + 0.4 * Bonds,
+         Cum_Return_60_40 = cumprod(1 + Strategy_60_40),
+         Log_Cum_Return_60_40 = log(Cum_Return_60_40),
+         Strategy_Optimal = optimal_weights[1] * Equity + optimal_weights[2] * Bonds,
+         Cum_Return_Optimal = cumprod(1 + Strategy_Optimal),
+         Log_Cum_Return_Optimal = log(Cum_Return_Optimal),
+         Strategy_Optimal_Leverage = optimal_weights_leverage[1] * Equity + optimal_weights_leverage[2] * Bonds,
+         Cum_Return_Optimal_Leverage = cumprod(1 + Strategy_Optimal_Leverage),
+         Log_Cum_Return_Optimal_Leverage = log(Cum_Return_Optimal_Leverage))
+
+
+# Plot the cumulative return with manually specified breaks
+ggplot(FullPeriod, aes(x = Date)) +
+  ### 60/40 Stragey
+  geom_line(aes(y = Log_Cum_Return_60_40, group = 1), color = "blue") +
+  geom_point(aes(y = Log_Cum_Return_60_40), color = "blue") +
+  ### Strategy from C
+  geom_line(aes(y = Log_Cum_Return_Optimal, group = 2), color = "red") +
+  geom_point(aes(y = Log_Cum_Return_Optimal), color = "red") +
+  ### Strategy from D
+  geom_line(aes(y = Log_Cum_Return_Optimal_Leverage, group = 2), color = "green") +
+  geom_point(aes(y = Log_Cum_Return_Optimal_Leverage), color = "green") +
+  ggtitle("Cumulative Return of Strategies (Log Scale)") +
+  xlab("Date") + ylab("Log Cumulative Return") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  scale_x_discrete(breaks = FullPeriodBreaks) +  # Use your predefined breaks
+  annotate(geom="text", x="2021-07", y=2.3, label=paste("60/40 Strategy"),
+           color="blue", size = 7) +
+  annotate(geom="text", x="2015-01", y=1.7, label=paste("Mean-Variance Efficient"),
+           color="red", size = 7) +
+  annotate(geom="text", x="2015-01", y=3, label=paste("Mean-Variance Efficient + Leverage"),
+           color="green", size = 7)
+
+
+
+
+###################################### Roaring 90s Plot ########################################
+
+# Convert Date to factor to keep it as "YYYY-MM"
+Roaring90s$Date <- factor(Roaring90s$Date)
+# Get labels for every 5th year (e.g., "1990-01", "1995-01", etc.)
+Roaring90sBreaks <- Roaring90s$Date[seq(1, length(Roaring90s$Date), by = 12 * 1)]  # every 5 years
+
+# Backtest: 60% in RF and 40% in Bonds
+Roaring90s <- Roaring90s %>%
+  mutate(Strategy_60_40 = 0.6 * Equity + 0.4 * Bonds,
+         Cum_Return_60_40 = cumprod(1 + Strategy_60_40),
+         Log_Cum_Return_60_40 = log(Cum_Return_60_40),
+         Strategy_Optimal = optimal_weights[1] * Equity + optimal_weights[2] * Bonds,
+         Cum_Return_Optimal = cumprod(1 + Strategy_Optimal),
+         Log_Cum_Return_Optimal = log(Cum_Return_Optimal),
+         Strategy_Optimal_Leverage = optimal_weights_leverage[1] * Equity + optimal_weights_leverage[2] * Bonds,
+         Cum_Return_Optimal_Leverage = cumprod(1 + Strategy_Optimal_Leverage),
+         Log_Cum_Return_Optimal_Leverage = log(Cum_Return_Optimal_Leverage))
+
+
+# Plot the cumulative return with manually specified breaks
+ggplot(Roaring90s, aes(x = Date)) +
+  ### 60/40 Stragey
+  geom_line(aes(y = Log_Cum_Return_60_40, group = 1), color = "blue") +
+  geom_point(aes(y = Log_Cum_Return_60_40), color = "blue") +
+  ### Strategy from C
+  geom_line(aes(y = Log_Cum_Return_Optimal, group = 2), color = "red") +
+  geom_point(aes(y = Log_Cum_Return_Optimal), color = "red") +
+  ### Strategy from D
+  geom_line(aes(y = Log_Cum_Return_Optimal_Leverage, group = 2), color = "green") +
+  geom_point(aes(y = Log_Cum_Return_Optimal_Leverage), color = "green") +
+  ggtitle("Cumulative Return of Strategies (Log Scale)") +
+  xlab("Date") + ylab("Log Cumulative Return") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  scale_x_discrete(breaks = Roaring90sBreaks) +  # Use your predefined breaks
+  annotate(geom="text", x="2000-01", y=1, label=paste("60/40 Strategy"),
+           color="blue", size = 7) +
+  annotate(geom="text", x="1997-01", y=0.7, label=paste("Mean-Variance Efficient"),
+           color="red", size = 7) +
+  annotate(geom="text", x="1997-01", y=1.5, label=paste("Mean-Variance Efficient + Leverage"),
+           color="green", size = 7)
+
+
+
+
+
+
+
+
+
+
+
+###################################### Financial Crisis Plot ########################################
+
+# Convert Date to factor to keep it as "YYYY-MM"
+FinancialCrisis$Date <- factor(FinancialCrisis$Date)
+# Get labels for every 5th year (e.g., "1990-01", "1995-01", etc.)
+FinancialCrisisBreaks <- FinancialCrisis$Date[seq(1, length(FinancialCrisis$Date), by = 12 * 1)]  # every 5 years
+
+# Backtest: 60% in RF and 40% in Bonds
+FinancialCrisis <- FinancialCrisis %>%
+  mutate(Strategy_60_40 = 0.6 * Equity + 0.4 * Bonds,
+         Cum_Return_60_40 = cumprod(1 + Strategy_60_40),
+         Log_Cum_Return_60_40 = log(Cum_Return_60_40),
+         Strategy_Optimal = optimal_weights[1] * Equity + optimal_weights[2] * Bonds,
+         Cum_Return_Optimal = cumprod(1 + Strategy_Optimal),
+         Log_Cum_Return_Optimal = log(Cum_Return_Optimal),
+         Strategy_Optimal_Leverage = optimal_weights_leverage[1] * Equity + optimal_weights_leverage[2] * Bonds,
+         Cum_Return_Optimal_Leverage = cumprod(1 + Strategy_Optimal_Leverage),
+         Log_Cum_Return_Optimal_Leverage = log(Cum_Return_Optimal_Leverage))
+
+
+# Plot the cumulative return with manually specified breaks
+ggplot(FinancialCrisis, aes(x = Date)) +
+  ### 60/40 Stragey
+  geom_line(aes(y = Log_Cum_Return_60_40, group = 1), color = "blue") +
+  geom_point(aes(y = Log_Cum_Return_60_40), color = "blue") +
+  ### Strategy from C
+  geom_line(aes(y = Log_Cum_Return_Optimal, group = 2), color = "red") +
+  geom_point(aes(y = Log_Cum_Return_Optimal), color = "red") +
+  ### Strategy from D
+  geom_line(aes(y = Log_Cum_Return_Optimal_Leverage, group = 2), color = "green") +
+  geom_point(aes(y = Log_Cum_Return_Optimal_Leverage), color = "green") +
+  ggtitle("Cumulative Return of Strategies (Log Scale)") +
+  xlab("Date") + ylab("Log Cumulative Return") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  scale_x_discrete(breaks = FinancialCrisisBreaks) +  # Use your predefined breaks
+  annotate(geom="text", x="2006-01", y=0.15, label=paste("60/40 Strategy"),
+           color="blue", size = 7) +
+  annotate(geom="text", x="2007-01", y=0.25, label=paste("Mean-Variance Efficient"),
+           color="red", size = 7) +
+  annotate(geom="text", x="2008-01", y=0.6, label=paste("Mean-Variance Efficient + Leverage"),
+           color="green", size = 7)
+
+
+
+
+
+
+
+###################################### Great Recession Recovery Plot ########################################
+
+# Convert Date to factor to keep it as "YYYY-MM"
+GreatRecessionRecovery$Date <- factor(GreatRecessionRecovery$Date)
+# Get labels for every 5th year (e.g., "1990-01", "1995-01", etc.)
+GreatRecessionRecoveryBreaks <- GreatRecessionRecovery$Date[seq(1, length(GreatRecessionRecovery$Date), by = 12 * 1)]  # every 5 years
+
+# Backtest: 60% in RF and 40% in Bonds
+GreatRecessionRecovery <- GreatRecessionRecovery %>%
+  mutate(Strategy_60_40 = 0.6 * Equity + 0.4 * Bonds,
+         Cum_Return_60_40 = cumprod(1 + Strategy_60_40),
+         Log_Cum_Return_60_40 = log(Cum_Return_60_40),
+         Strategy_Optimal = optimal_weights[1] * Equity + optimal_weights[2] * Bonds,
+         Cum_Return_Optimal = cumprod(1 + Strategy_Optimal),
+         Log_Cum_Return_Optimal = log(Cum_Return_Optimal),
+         Strategy_Optimal_Leverage = optimal_weights_leverage[1] * Equity + optimal_weights_leverage[2] * Bonds,
+         Cum_Return_Optimal_Leverage = cumprod(1 + Strategy_Optimal_Leverage),
+         Log_Cum_Return_Optimal_Leverage = log(Cum_Return_Optimal_Leverage))
+
+
+# Plot the cumulative return with manually specified breaks
+ggplot(GreatRecessionRecovery, aes(x = Date)) +
+  ### 60/40 Stragey
+  geom_line(aes(y = Log_Cum_Return_60_40, group = 1), color = "blue") +
+  geom_point(aes(y = Log_Cum_Return_60_40), color = "blue") +
+  ### Strategy from C
+  geom_line(aes(y = Log_Cum_Return_Optimal, group = 2), color = "red") +
+  geom_point(aes(y = Log_Cum_Return_Optimal), color = "red") +
+  ### Strategy from D
+  geom_line(aes(y = Log_Cum_Return_Optimal_Leverage, group = 2), color = "green") +
+  geom_point(aes(y = Log_Cum_Return_Optimal_Leverage), color = "green") +
+  ggtitle("Cumulative Return of Strategies (Log Scale)") +
+  xlab("Date") + ylab("Log Cumulative Return") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  scale_x_discrete(breaks = GreatRecessionRecoveryBreaks) +  # Use your predefined breaks
+  annotate(geom="text", x="2017-01", y=0.7, label=paste("60/40 Strategy"),
+           color="blue", size = 7) +
+  annotate(geom="text", x="2016-07", y=0.9, label=paste("Mean-Variance Efficient"),
+           color="red", size = 7) +
+  annotate(geom="text", x="2018-01", y=1.3, label=paste("Mean-Variance Efficient + Leverage"),
+           color="green", size = 7)
+
+
+
+
+
+
+
+###################################### Covid Plot ########################################
+
+# Convert Date to factor to keep it as "YYYY-MM"
+Covid$Date <- factor(Covid$Date)
+# Get labels for every 5th year (e.g., "1990-01", "1995-01", etc.)
+CovidBreaks <- Covid$Date[seq(1, length(Covid$Date), by = 12 * 1)]  # every 5 years
+
+# Backtest: 60% in RF and 40% in Bonds
+Covid <- Covid %>%
+  mutate(Strategy_60_40 = 0.6 * Equity + 0.4 * Bonds,
+         Cum_Return_60_40 = cumprod(1 + Strategy_60_40),
+         Log_Cum_Return_60_40 = log(Cum_Return_60_40),
+         Strategy_Optimal = optimal_weights[1] * Equity + optimal_weights[2] * Bonds,
+         Cum_Return_Optimal = cumprod(1 + Strategy_Optimal),
+         Log_Cum_Return_Optimal = log(Cum_Return_Optimal),
+         Strategy_Optimal_Leverage = optimal_weights_leverage[1] * Equity + optimal_weights_leverage[2] * Bonds,
+         Cum_Return_Optimal_Leverage = cumprod(1 + Strategy_Optimal_Leverage),
+         Log_Cum_Return_Optimal_Leverage = log(Cum_Return_Optimal_Leverage))
+
+
+# Plot the cumulative return with manually specified breaks
+ggplot(Covid, aes(x = Date)) +
+  ### 60/40 Stragey
+  geom_line(aes(y = Log_Cum_Return_60_40, group = 1), color = "blue") +
+  geom_point(aes(y = Log_Cum_Return_60_40), color = "blue") +
+  ### Strategy from C
+  geom_line(aes(y = Log_Cum_Return_Optimal, group = 2), color = "red") +
+  geom_point(aes(y = Log_Cum_Return_Optimal), color = "red") +
+  ### Strategy from D
+  geom_line(aes(y = Log_Cum_Return_Optimal_Leverage, group = 2), color = "green") +
+  geom_point(aes(y = Log_Cum_Return_Optimal_Leverage), color = "green") +
+  ggtitle("Cumulative Return of Strategies (Log Scale)") +
+  xlab("Date") + ylab("Log Cumulative Return") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  scale_x_discrete(breaks = CovidBreaks) +  # Use your predefined breaks
+  annotate(geom="text", x="2021-10", y=0.3, label=paste("60/40 Strategy"),
+           color="blue", size = 7) +
+  annotate(geom="text", x="2022-09", y=0.2, label=paste("Mean-Variance Efficient"),
+           color="red", size = 7) +
+  annotate(geom="text", x="2022-07", y=0.5, label=paste("Mean-Variance Efficient + Leverage"),
+           color="green", size = 7)
 
 
 
