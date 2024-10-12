@@ -3,8 +3,6 @@
 #------------------------------- Current Investment Universe -------------------------------------------------------
 ####################################################################################################################
 ####################################################################################################################
-library(quadprog)
-
 
 ### Data
 RF <- FFdata_Monthly_Factors$RF ### RF rate
@@ -60,8 +58,10 @@ E_R_B <- mean(Bonds, na.rm = TRUE)  # Average bond return
 E_R_p <- w_S * E_R_S + w_B * E_R_B
 
 # Calculate volatility of stocks and bonds
-sigma_S <- sd(market_return, na.rm = TRUE)/100  # Volatility of stocks
+sigma_S <- sd(market_return/100, na.rm = TRUE)  # Volatility of stocks
 sigma_B <- sd(Bonds, na.rm = TRUE)  # Volatility of bonds
+plot(Bonds)
+plot(market_return/100)
 
 # Covariance between stocks and bonds
 covariance <- cov((market_return/100), Bonds, use = "pairwise.complete.obs")
@@ -145,57 +145,13 @@ cat("Expected Return:", gmv_return, "\n")
 cat("Portfolio Volatility:", gmv_volatility, "\n")
 
 
+
+
 ####################################################################################################################
 ####################################################################################################################
-#------------------------------------- Backtest --------------------------------------------------------------------
+#---------------------------------------- C ------------------------------------------------------------------------
 ####################################################################################################################
 ####################################################################################################################
-
-
-### Convert from "chr" to "num"
-MOMexp_Average_Value_Weighted_Returns_Monthly[,2:7] <- lapply(MOMexp_Average_Value_Weighted_Returns_Monthly[,2:7], as.numeric)
-MOMexp_Number_of_Firms_in_Portfolios[,2:7] <- lapply(MOMexp_Number_of_Firms_in_Portfolios[,2:7], as.numeric)
-MOMexp_Average_Firm_Size[,2:7] <- lapply(MOMexp_Average_Firm_Size[,2:7], as.numeric)
-Equity <- MOMexp_Average_Value_Weighted_Returns_Monthly[,2:7] / (MOMexp_Number_of_Firms_in_Portfolios[,2:7] * MOMexp_Average_Firm_Size[,2:7])
-  ### Equity: Calculate (entire) stock market return from MOMexp by appropriately 
-  ### weighting ‘Average Value Weighted Returns – Monthly’ by ‘Number of Firms in
-  ### Portfolio’ and ‘Average Firm Size’.
-
-
-FullPeriod <- data.frame("Date" = FFdata$Date[763:1170],    ### 199001-202312 
-                         "RF" = as.numeric(RF[763:1170]),
-                         "Bonds" = Bonds,
-                         "SMALL LoPRIOR" = Equity[763:1170,1],
-                         "ME1 PRIOR2" = Equity[763:1170,2],
-                         "SMALL HiPRIOR" = Equity[763:1170,3],
-                         "BIG LoPRIOR" = Equity[763:1170,4],
-                         "ME2 PRIOR2" = Equity[763:1170,5],
-                         "BIG HiPRIOR" = Equity[763:1170,6],
-                         "Equity" = (Equity[763:1170,1] + Equity[763:1170,2] + Equity[763:1170,3] + Equity[763:1170,4] + Equity[763:1170,5] + Equity[763:1170,6])/6)
-
-
-### Convert Date to Date type
-FullPeriod$Date <- as.Date(paste0(FullPeriod$Date, "01"), format="%Y%m%d")
-
-### Backtest: 60% in Equity and 40% in Bonds
-FullPeriod <- FullPeriod %>%
-  mutate(Strategy_Return = 0.6 * Equity + 0.4 * Bonds,
-         Cumulative_Return = cumprod(1 + Strategy_Return),
-         Log_Cumulative_Return = log(Cumulative_Return))
-
-# Plot the cumulative return in log scale
-ggplot(FullPeriod, aes(x = Date, y = Cumulative_Return)) +
-  geom_line(color = "blue") +
-  geom_point() +
-  ggtitle("Cumulative Return of Strategy") +
-  xlab("Date") + ylab("Cumulative Return") +
-  theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
-  scale_x_date(date_labels = "%Y", 
-               breaks = as.Date(c("1990-01-01", "1995-01-01", "2000-01-01",
-                                  "2005-01-01", "2010-01-01", "2015-01-01", "2020-01-01")))
-
-#------------------------------------------------------C--------------------------------------------------------#
 # Define expected returns and covariances
 E_R_S <- mean(market_return) / 100  # Expected return for stocks
 E_R_B <- mean(Bonds, na.rm = TRUE)  # Expected return for bonds
@@ -227,13 +183,21 @@ optimal_weights <- result$solution
 optimal_return <- sum(optimal_weights * expected_returns)
 optimal_volatility <- sqrt(t(optimal_weights) %*% cov_matrix %*% optimal_weights)
 
-# Print the optimal allocation, return, and risk
+# pritn results
 cat("Optimal Weights for Stocks:", optimal_weights[1], "\n")
 cat("Optimal Weights for Bonds:", optimal_weights[2], "\n")
 cat("Optimal Portfolio Return:", optimal_return, "\n")
 cat("Optimal Portfolio Volatility:", optimal_volatility, "\n")
 
-#-------------------------------------------------d------------------------------------------------------------#
+
+
+
+
+####################################################################################################################
+####################################################################################################################
+#---------------------------------------- D ------------------------------------------------------------------------
+####################################################################################################################
+####################################################################################################################
 # Allow 50% constraint, i.e. 1.5 weight
 bvec_leverage <- c(1.5, target_return)
 
@@ -252,3 +216,12 @@ cat("Optimal Weights for Stocks with leverage 50%:", optimal_weights_leverage[1]
 cat("Optimal Weights for Bonds with leverage 50%:", optimal_weights_leverage[2], "\n")
 cat("Optimal Portfolio Return with leverage 50%:", optimal_return_leverage, "\n")
 cat("Optimal Portfolio Volatility with leverage 50%:", optimal_volatility_leverage, "\n")
+
+
+
+
+
+
+
+
+
