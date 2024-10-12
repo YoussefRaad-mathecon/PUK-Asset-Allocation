@@ -225,7 +225,7 @@ optimal_weights <- result$solution
 optimal_return <- sum(optimal_weights * expected_returns)
 optimal_volatility <- sqrt(t(optimal_weights) %*% cov_matrix %*% optimal_weights)
 
-# Print the optimal allocation, return, and risk
+# pritn results
 cat("Optimal Weights for Stocks:", optimal_weights[1], "\n")
 cat("Optimal Weights for Bonds:", optimal_weights[2], "\n")
 cat("Optimal Portfolio Return:", optimal_return, "\n")
