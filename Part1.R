@@ -90,16 +90,6 @@ n_portfolios <- 100
 w_S <- seq(0, 1, length.out = n_portfolios)
 w_B <- 1 - w_S  # Complementary weight for bonds
 
-# Expected returns for stocks and bonds
-E_R_S <- mean(market_return)/100  # Stock return (in decimal)
-E_R_B <- mean(Bonds, na.rm = TRUE)  # Bond return (in decimal)
-
-# Standard deviations (volatility) for stocks and bonds
-sigma_S <- sd(market_return, na.rm = TRUE)/100  # Stock volatility (in decimal)
-sigma_B <- sd(Bonds, na.rm = TRUE)  # Bond volatility (in decimal)
-
-# Covariance between stocks and bonds
-covariance <- cov(market_return/100, Bonds, use = "pairwise.complete.obs")
 
 # Initialize vectors to store results
 port_returns <- numeric(n_portfolios)
@@ -116,18 +106,41 @@ for (i in 1:n_portfolios) {
                                  2 * w_S[i] * w_B[i] * covariance)
 }
 
+# Find the Global Minimum Variance Portfolio (GMV)
+min_variance_idx <- which.min(port_volatilities)
 
+# Extract the return and volatility of the GMV portfolio
+gmv_return <- port_returns[min_variance_idx]
+gmv_volatility <- port_volatilities[min_variance_idx]
 
-# Plot the efficient frontier with the mean-variance efficient portfolio
-plot(port_volatilities, port_returns, type = "l", col = "blue", lwd = 2,
+# Split portfolios into efficient (above GMV) and inefficient (below GMV)
+efficient_indices <- which(port_returns >= gmv_return)
+inefficient_indices <- which(port_returns < gmv_return)
+
+# Plot the inefficient frontier (below GMV) with a dashed line
+plot(port_volatilities[inefficient_indices], port_returns[inefficient_indices], type = "l", col = "blue", lwd = 2, lty = 2,
+     ylim = c(min(port_returns), max(port_returns)),
      xlab = "Portfolio Volatility", ylab = "Portfolio Expected Return",
-     main = "Efficient Frontier")
+     main = "Efficient Frontier with Global Minimum Variance Portfolio")
+
+# Add the efficient frontier (above GMV) with a solid line
+lines(port_volatilities[efficient_indices], port_returns[efficient_indices], col = "blue", lwd = 2)
+
+# Highlight the Global Minimum Variance Portfolio (GMV)
+points(gmv_volatility, gmv_return, col = "green", pch = 16, cex = 1.5)
+text(gmv_volatility, gmv_return, labels = "GMV Portfolio", pos = 4, col = "green")
+
+# Highlight the 60/40 portfolio
+points(sigma_p, E_R_p, col = "red", pch = 8, cex = 1.5)
+text(sigma_p, E_R_p, labels = "60/40 Strategy", pos = 1, col = "red")
+
+# Add grid for better visualization
 grid()
 
-# Highlight the mean-variance efficient portfolio
-points(sigma_p, E_R_p, col = "red", pch = 8, cex = 1.5)
-text(sigma_p, E_R_p, labels = "60/40 Strategy", pos = 4, col = "red")
-
+# Print the GMV portfolio details
+cat("Global Minimum Variance Portfolio:\n")
+cat("Expected Return:", gmv_return, "\n")
+cat("Portfolio Volatility:", gmv_volatility, "\n")
 
 
 ####################################################################################################################
