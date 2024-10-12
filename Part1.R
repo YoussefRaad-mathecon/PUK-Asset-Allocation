@@ -6,8 +6,9 @@
 
 ### Data
 RF <- FFdata_Monthly_Factors$RF ### RF rate
-RiskFree <- RF[763:1170] ### RF rate
 Bonds <- MonthlyReturn$X10.Yr ### Bonds: S&P U.S. 10Y T-bond
+
+
 
 ## Split into subsets of subsets and cut timeline of the CSV file 6_Portfolios_ME_Prior_12_2.CSV
 # Average Value Weighted Returns -- Monthly
@@ -219,6 +220,50 @@ cat("Optimal Portfolio Volatility with leverage 50%:", optimal_volatility_levera
 
 
 
+
+
+
+
+####################################################################################################################
+####################################################################################################################
+#---------------------------------------- F ------------------------------------------------------------------------
+####################################################################################################################
+####################################################################################################################
+
+FullPeriod <- data.frame(
+  "Date" = FFdata_Monthly_Factors$Date[757:1164],
+  "RF" = FFdata_Monthly_Factors$RF[757:1164],
+  "Bonds" = Bonds,
+  "Equity" = market_return)
+row.names(FullPeriod) <- NULL
+FullPeriod$Date <- as.Date(paste0(FullPeriod$Date, "01"), format = "%Y%m%d")
+
+### 199001 - 200112
+Roaring90s <- subset(FullPeriod,
+                     Date >= as.Date("1990-01-01") & Date <= as.Date("2001-12-01"))
+row.names(Roaring90s) <- NULL
+Roaring90s$Date <- format(Roaring90s$Date, "%Y-%m")
+
+### 200201 - 200912
+FinancialCrisis <- subset(FullPeriod,
+                          Date >= as.Date("2002-01-01") & Date <= as.Date("2009-12-01"))
+row.names(FinancialCrisis) <- NULL
+FinancialCrisis$Date <- format(FinancialCrisis$Date, "%Y-%m")
+
+### 201001 - 201912
+GreatRecessionRecovery <- subset(FullPeriod,
+                                 Date >= as.Date("2010-01-01") & Date <= as.Date("2019-12-01"))
+row.names(GreatRecessionRecovery) <- NULL
+GreatRecessionRecovery$Date <- format(GreatRecessionRecovery$Date, "%Y-%m")
+
+### 202001 - 202312
+Covid <- subset(FullPeriod,
+                Date >= as.Date("2020-01-01") & Date <= as.Date("2023-12-01"))
+row.names(Covid) <- NULL
+Covid$Date <- format(Covid$Date, "%Y-%m")
+
+### 199001 - 202312
+FullPeriod$Date <- format(FullPeriod$Date, "%Y-%m")
 
 
 
