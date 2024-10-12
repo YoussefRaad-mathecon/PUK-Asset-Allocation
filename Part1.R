@@ -125,8 +125,8 @@ plot(port_volatilities, port_returns, type = "l", col = "blue", lwd = 2,
 grid()
 
 # Highlight the mean-variance efficient portfolio
-points(optimal_volatility, optimal_return, col = "red", pch = 16, cex = 1.5)
-text(optimal_volatility, optimal_return, labels = "60/40 Strategy", pos = 4, col = "red")
+points(sigma_p, E_R_p, col = "red", pch = 8, cex = 1.5)
+text(sigma_p, E_R_p, labels = "60/40 Strategy", pos = 4, col = "red")
 
 
 
