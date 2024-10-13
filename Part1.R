@@ -50,7 +50,6 @@ w_B <- 0.40  # Weight in bonds
 # Expected return of portfolio
 E_R_S <- mean(market_return)/100  # Average stock return
 E_R_B <- mean(Bonds)  # Average bond return
-
 E_R_p <- w_S * E_R_S + w_B * E_R_B
 
 # Calculate volatility of stocks and bonds
@@ -72,7 +71,7 @@ cat("Expected Return of Portfolio 60/40:", E_R_p, "\n") #0.007369112
 cat("Portfolio 60/40 Volatility :", sigma_p, "\n") #0.02808134
 cat("Meets Return Target:", meets_target, "\n") #Does not meet target return
 
-
+#it is efficient but does not deliver return target
 ####################################################################################################################
 ####################################################################################################################
 #--------------------------------- Efficient Frontier --------------------------------------------------------------
@@ -141,7 +140,6 @@ cat("Portfolio Volatility:", gmv_volatility, "\n") #0.02005593
 
 
 
-
 ####################################################################################################################
 ####################################################################################################################
 #---------------------------------------- C ------------------------------------------------------------------------
@@ -166,7 +164,7 @@ Dmat <- cov_matrix  # Covariance matrix
 dvec <- rep(0, 2)  # Zero vector since we're minimizing risk
 Amat <- cbind(1, expected_returns)  # Constraints matrix -> 1 for sum of weights, expected returns
 bvec <- c(1, target_return)  # Constraints vector: weights sum to 1, return = target_return
-meq <- 0  # No equality constraint on sum of weights (allows leverage or shorting)
+meq <- 0  # No equality constraint on sum of weights
 
 # Solve quadratic programming problem with no leverage/shorting restrictions
 result_leverage <- solve.QP(Dmat, dvec, Amat, bvec, meq)
@@ -179,10 +177,11 @@ optimal_return_leverage <- sum(optimal_weights_leverage * expected_returns)
 optimal_volatility_leverage <- sqrt(t(optimal_weights_leverage) %*% cov_matrix %*% optimal_weights_leverage)
 
 # Print results
-cat("Optimal Weights for Stocks (with leverage):", optimal_weights_leverage[1], "\n")
-cat("Optimal Weights for Bonds (with leverage):", optimal_weights_leverage[2], "\n")
-cat("Optimal Portfolio Return (fixed at 75 bps):", optimal_return_leverage, "\n")
-cat("Optimal Portfolio Volatility (minimized with leverage):", optimal_volatility_leverage, "\n")
+cat("Optimal Weights for Stocks (with leverage):", optimal_weights_leverage[1], "\n") #0.4250321
+cat("Optimal Weights for Bonds (with leverage):", optimal_weights_leverage[2], "\n") #0.7943561
+cat("Optimal Portfolio Return (fixed at 75 bps):", optimal_return_leverage, "\n") #0.0075 (by construction)
+cat("Optimal Portfolio Volatility (minimized with leverage):", optimal_volatility_leverage, "\n") #0.02603394
+
 
 #Part 2: without leverage/borrowing
 # Define expected returns and covariances
@@ -228,7 +227,6 @@ cat("Optimal Portfolio Volatility:", optimal_volatility, "\n") #0.02902416
 #---------------------------------------- D ------------------------------------------------------------------------
 ####################################################################################################################
 ####################################################################################################################
-# Load necessary library for optimization
 library(quadprog)
 
 # Define expected returns and covariances
@@ -237,10 +235,10 @@ E_R_B <- mean(Bonds, na.rm = TRUE)  # Expected return for bonds
 sigma_S <- sd(market_return, na.rm = TRUE) / 100  # Volatility of stocks
 sigma_B <- sd(Bonds, na.rm = TRUE)  # Volatility of bonds
 covariance <- cov(market_return / 100, Bonds, use = "pairwise.complete.obs")
-
+print(covariance)
 # Define the covariance matrix for the assets
 cov_matrix <- matrix(c(sigma_S^2, covariance, covariance, sigma_B^2), nrow = 2)
-
+print(cov_matrix)
 # expected return vectors
 expected_returns <- c(E_R_S, E_R_B)
 
@@ -273,20 +271,37 @@ cat("Corrected Optimal Portfolio Volatility (minimized with leverage):", optimal
 #---------------------------------------- E ------------------------------------------------------------------------
 ####################################################################################################################
 ####################################################################################################################
-# objective function (kill me)
-risk_parity_objective <- function(w, Sigma) {
-  # Dimensions because shit isn't working
+
+# Define expected returns and covariances
+E_R_S <- mean(market_return) / 100  # Expected return for stocks
+E_R_B <- mean(Bonds, na.rm = TRUE)  # Expected return for bonds
+sigma_S <- sd(market_return, na.rm = TRUE) / 100  # Volatility of stocks
+sigma_B <- sd(Bonds, na.rm = TRUE)  # Volatility of bonds
+covariance <- cov(market_return / 100, Bonds, use = "pairwise.complete.obs")
+
+# Define covariance matrix for the assets
+cov_matrix <- matrix(c(sigma_S^2, covariance, covariance, sigma_B^2), nrow = 2)
+
+# Define bounds for weights (allowing for leverage)
+lb <- c(0, 0)  # Lower bound for weights (no shorting)
+ub <- c(1.5, 1.5)  # Upper bound allowing for leverage (weights can sum to 1.5)
+
+# Define expected returns vector
+expected_returns <- c(E_R_S, E_R_B)
+
+# Objective function for risk parity
+risk_parity_objective <- function(w, cov_matrix) {
+  # Print current weights and dimensions
   cat("Weights (w):", w, "\n")
-  cat("Sigma dimensions:", dim(Sigma), "\n")
+  cat("Covariance matrix dimensions:", dim(cov_matrix), "\n")
   cat("Weight dimensions:", length(w), "\n")
   
   # Calculate portfolio volatility
-  portfolio_vol <- sqrt(t(w) %*% Sigma %*% w)
-
+  portfolio_vol <- sqrt(t(w) %*% cov_matrix %*% w)
   cat("Portfolio volatility:", portfolio_vol, "\n")
   
-  # Calculate marginal risk contribution (fixed division issue)
-  marginal_risk_contribution <- (Sigma %*% w) / as.numeric(portfolio_vol)
+  # Calculate marginal risk contribution
+  marginal_risk_contribution <- (cov_matrix %*% w) / as.numeric(portfolio_vol)
   cat("Marginal risk contribution:", marginal_risk_contribution, "\n")
   
   # Calculate risk contribution
@@ -297,6 +312,10 @@ risk_parity_objective <- function(w, Sigma) {
   return(sum((risk_contribution - mean(risk_contribution))^2))  # Minimize difference in risk contributions
 }
 
+# Weight sum constraint function
+weight_sum_constraint <- function(w) {
+  return(sum(w) - 1.5)  # Ensure weights sum to 1.5 for leverage
+}
 
 # Initial guess for weights
 initial_weights <- c(0.75, 0.75)
@@ -304,27 +323,26 @@ initial_weights <- c(0.75, 0.75)
 # Call the optimizer with debugging output
 opt_result <- nloptr(
   x0 = initial_weights,
-  eval_f = function(w) risk_parity_objective(w, Sigma),
+  eval_f = function(w) risk_parity_objective(w, cov_matrix),
   eval_g_ineq = function(w) weight_sum_constraint(w),
   lb = lb, ub = ub,
   opts = list(algorithm = "NLOPT_LN_COBYLA", xtol_rel = 1e-8)
 )
 
-
-# Print optimal weights and volatility
 # Extract optimal weights
 optimal_weights <- opt_result$solution
-# Print optimal weights
-cat("LRP Optimal Weights (Stocks, Bonds):", optimal_weights, "\n") 
 
-# optimal portfolio return
-cat("LRP Optimal Portfolio Return:", optimal_portfolio_return, "\n")
+
+cat("LRP Weight for Stocks:", optimal_weights[1], "\n") #0.4134228
+cat("LRP Weight for Bonds:", optimal_weights[2], "\n") #0.8171674
+
+# Calculate  portfolio LRP return
 optimal_portfolio_return <- optimal_weights[1] * E_R_S + optimal_weights[2] * E_R_B
+cat("LRP Optimal Portfolio Return:", optimal_portfolio_return, "\n") #0.007493718 
 
-#  optimal portfolio volatility
-optimal_portfolio_volatility <- sqrt(t(optimal_weights) %*% Sigma %*% optimal_weights)
-cat("LRP Optimal Portfolio Volatility:", optimal_portfolio_volatility, "\n")
-
+# Calculate  optimal LRP volatility
+optimal_portfolio_volatility <- sqrt(t(optimal_weights) %*% cov_matrix %*% optimal_weights)
+cat("LRP Optimal Portfolio Volatility:", optimal_portfolio_volatility, "\n") #0.02602195
 
 
 ####################################################################################################################
