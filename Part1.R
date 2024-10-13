@@ -3,7 +3,7 @@
 #------------------------------- Current Investment Universe -------------------------------------------------------
 ####################################################################################################################
 ####################################################################################################################
-
+set.seed(123)
 library(quadprog)
 # RF and bonds from Data.R
 
@@ -147,6 +147,44 @@ cat("Portfolio Volatility:", gmv_volatility, "\n") #0.02005593
 #---------------------------------------- C ------------------------------------------------------------------------
 ####################################################################################################################
 ####################################################################################################################
+# Part 1: with leverage/shorting
+# Define expected returns and covariances
+E_R_S <- mean(market_return) / 100  # Expected return for stocks
+E_R_B <- mean(Bonds, na.rm = TRUE)  # Expected return for bonds
+sigma_S <- sd(market_return, na.rm = TRUE) / 100  # Volatility of stocks
+sigma_B <- sd(Bonds, na.rm = TRUE)  # Volatility of bonds
+covariance <- cov(market_return / 100, Bonds, use = "pairwise.complete.obs")
+
+# Define covar matrix for the assets
+cov_matrix <- matrix(c(sigma_S^2, covariance, covariance, sigma_B^2), nrow = 2)
+
+# Define expected returns vector
+expected_returns <- c(E_R_S, E_R_B)
+
+# Minimize portfolio variance/risk s.t. target return = target_return
+Dmat <- cov_matrix  # Covariance matrix
+dvec <- rep(0, 2)  # Zero vector since we're minimizing risk
+Amat <- cbind(1, expected_returns)  # Constraints matrix -> 1 for sum of weights, expected returns
+bvec <- c(1, target_return)  # Constraints vector: weights sum to 1, return = target_return
+meq <- 0  # No equality constraint on sum of weights (allows leverage or shorting)
+
+# Solve quadratic programming problem with no leverage/shorting restrictions
+result_leverage <- solve.QP(Dmat, dvec, Amat, bvec, meq)
+
+# Extract portfolio weights
+optimal_weights_leverage <- result_leverage$solution
+
+# Calculate optimal portfolio return and risk (volatility)
+optimal_return_leverage <- sum(optimal_weights_leverage * expected_returns)
+optimal_volatility_leverage <- sqrt(t(optimal_weights_leverage) %*% cov_matrix %*% optimal_weights_leverage)
+
+# Print results
+cat("Optimal Weights for Stocks (with leverage):", optimal_weights_leverage[1], "\n")
+cat("Optimal Weights for Bonds (with leverage):", optimal_weights_leverage[2], "\n")
+cat("Optimal Portfolio Return (fixed at 75 bps):", optimal_return_leverage, "\n")
+cat("Optimal Portfolio Volatility (minimized with leverage):", optimal_volatility_leverage, "\n")
+
+#Part 2: without leverage/borrowing
 # Define expected returns and covariances
 E_R_S <- mean(market_return) / 100  # Expected return for stocks
 E_R_B <- mean(Bonds, na.rm = TRUE)  # Expected return for bonds
@@ -190,40 +228,105 @@ cat("Optimal Portfolio Volatility:", optimal_volatility, "\n") #0.02902416
 #---------------------------------------- D ------------------------------------------------------------------------
 ####################################################################################################################
 ####################################################################################################################
-# Allow 50% constraint, i.e. 1.5 weight
-bvec_leverage <- c(1.5, target_return)
+# Load necessary library for optimization
+library(quadprog)
 
-# Solve quadratic programming problem with leverage constraint 1.5 
-result_leverage <- solve.QP(Dmat, dvec, Amat, bvec_leverage, meq)
+# Define expected returns and covariances
+E_R_S <- mean(market_return) / 100  # Expected return for stocks
+E_R_B <- mean(Bonds, na.rm = TRUE)  # Expected return for bonds
+sigma_S <- sd(market_return, na.rm = TRUE) / 100  # Volatility of stocks
+sigma_B <- sd(Bonds, na.rm = TRUE)  # Volatility of bonds
+covariance <- cov(market_return / 100, Bonds, use = "pairwise.complete.obs")
 
-# Extract portfolio weights with leverage
-optimal_weights_leverage <- result_leverage$solution
+# Define the covariance matrix for the assets
+cov_matrix <- matrix(c(sigma_S^2, covariance, covariance, sigma_B^2), nrow = 2)
 
-# Calculate optimal portfolio return and risk (volatility) with leverage
-optimal_return_leverage <- sum(optimal_weights_leverage * expected_returns)
-optimal_volatility_leverage <- sqrt(t(optimal_weights_leverage) %*% cov_matrix %*% optimal_weights_leverage)
+# expected return vectors
+expected_returns <- c(E_R_S, E_R_B)
 
-# Poptimal results 1.5 leverage
-cat("Optimal Weights for Stocks with leverage 50%:", optimal_weights_leverage[1], "\n") #0.298976 
-cat("Optimal Weights for Bonds with leverage 50%:", optimal_weights_leverage[2], "\n") #1.201024
-cat("Optimal Portfolio Return with leverage 50%:", optimal_return_leverage, "\n") #0.008141066
-cat("Optimal Portfolio Volatility with leverage 50%:", optimal_volatility_leverage, "\n") #0.03008323
+# target
+target_return <- 0.0075
 
+# 1.5 leverage constraint
+Amat <- cbind(1, expected_returns)  # Constraints matrix as 1 for sum of weights, expected returns
+bvec_leverage <- c(1.5, target_return)  # total weights sum to 1.5 and return equals 75 bps
+meq_leverage <- 2  # Both constraints are equality constraints
 
+# solver to the quadratic programming problem
+result_leverage_fixed <- solve.QP(Dmat, dvec, Amat, bvec_leverage, meq_leverage)
+
+# extract portfolio weights with leverage
+optimal_weights_leverage_fixed <- result_leverage_fixed$solution
+
+# get optimal portfolio return and risk with leverage
+optimal_return_leverage_fixed <- sum(optimal_weights_leverage_fixed * expected_returns)
+optimal_volatility_leverage_fixed <- sqrt(t(optimal_weights_leverage_fixed) %*% cov_matrix %*% optimal_weights_leverage_fixed)
+
+# Print the corrected optimal allocation, return, and risk with leverage
+cat("Corrected Optimal Weights for Stocks 1.5 leverage:", optimal_weights_leverage_fixed[1], "\n") #0.1666901 
+cat("Corrected Optimal Weights for Bonds (with leverage):", optimal_weights_leverage_fixed[2], "\n") #1.33331
+cat("Corrected Portfolio Return (fixed at 75 bps):", optimal_return_leverage_fixed, "\n") #0.0075 
+cat("Corrected Optimal Portfolio Volatility (minimized with leverage):", optimal_volatility_leverage_fixed, "\n") #0.03077518 
 
 ####################################################################################################################
 ####################################################################################################################
 #---------------------------------------- E ------------------------------------------------------------------------
 ####################################################################################################################
 ####################################################################################################################
+# This is fking bs
 
+# Define the covariance matrix and expected returns
+E_R_S <- mean(market_return) / 100  # Expected return for stocks
+E_R_B <- mean(Bonds, na.rm = TRUE)  # Expected return for bonds
+sigma_S <- sd(market_return, na.rm = TRUE) / 100  # Volatility of stocks
+sigma_B <- sd(Bonds, na.rm = TRUE)  # Volatility of bonds
+covariance <- cov(market_return / 100, Bonds, use = "pairwise.complete.obs")
 
+# Covariance matrix
+Sigma <- matrix(c(sigma_S^2, covariance, covariance, sigma_B^2), nrow = 2)
 
+# Portfolio volatility function
+portfolio_volatility <- function(w, Sigma) {
+  sqrt(t(w) %*% Sigma %*% w)
+}
 
+# Risk contribution function
+risk_contributions <- function(w, Sigma) {
+  Sigma_w <- Sigma %*% w
+  w * Sigma_w / portfolio_volatility(w, Sigma)
+}
 
+# Objective function to minimize squared differences in risk contributions
+risk_parity_objective <- function(w, Sigma) {
+  RC <- risk_contributions(w, Sigma)
+  sum((RC - mean(RC))^2)  # Minimize the squared difference in risk contributions
+}
 
+# Leverage constraint function: sum of weights should equal 1.5
+leverage_constraint <- function(w) {
+  sum(w) - 1.5
+}
 
+# Set up initial weights (equal weights) but leverage so 1.5
+w0 <- c(0.75, 0.75)
 
+# Set optimization bounds
+lower_bounds <- c(0, 0)
+upper_bounds <- c(1.5, 1.5)
+
+# Solve the optimization problem using nloptr
+opt <- nloptr(
+  x0 = w0,
+  eval_f = function(w) risk_parity_objective(w, Sigma),
+  lb = lower_bounds,
+  ub = upper_bounds,
+  eval_g_eq = leverage_constraint,  # Enforce leverage constraint
+  opts = list("algorithm" = "NLOPT_LD_SLSQP", "xtol_rel" = 1e-6)
+)
+
+# Optimal weights extraction
+optimal_weights <- opt$solution
+optimal_weights
 
 
 ####################################################################################################################
