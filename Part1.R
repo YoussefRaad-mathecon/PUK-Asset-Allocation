@@ -273,60 +273,58 @@ cat("Corrected Optimal Portfolio Volatility (minimized with leverage):", optimal
 #---------------------------------------- E ------------------------------------------------------------------------
 ####################################################################################################################
 ####################################################################################################################
-# This is fking bs
-
-# Define the covariance matrix and expected returns
-E_R_S <- mean(market_return) / 100  # Expected return for stocks
-E_R_B <- mean(Bonds, na.rm = TRUE)  # Expected return for bonds
-sigma_S <- sd(market_return, na.rm = TRUE) / 100  # Volatility of stocks
-sigma_B <- sd(Bonds, na.rm = TRUE)  # Volatility of bonds
-covariance <- cov(market_return / 100, Bonds, use = "pairwise.complete.obs")
-
-# Covariance matrix
-Sigma <- matrix(c(sigma_S^2, covariance, covariance, sigma_B^2), nrow = 2)
-
-# Portfolio volatility function
-portfolio_volatility <- function(w, Sigma) {
-  sqrt(t(w) %*% Sigma %*% w)
-}
-
-# Risk contribution function
-risk_contributions <- function(w, Sigma) {
-  Sigma_w <- Sigma %*% w
-  w * Sigma_w / portfolio_volatility(w, Sigma)
-}
-
-# Objective function to minimize squared differences in risk contributions
+# objective function (kill me)
 risk_parity_objective <- function(w, Sigma) {
-  RC <- risk_contributions(w, Sigma)
-  sum((RC - mean(RC))^2)  # Minimize the squared difference in risk contributions
+  # Dimensions because shit isn't working
+  cat("Weights (w):", w, "\n")
+  cat("Sigma dimensions:", dim(Sigma), "\n")
+  cat("Weight dimensions:", length(w), "\n")
+  
+  # Calculate portfolio volatility
+  portfolio_vol <- sqrt(t(w) %*% Sigma %*% w)
+
+  cat("Portfolio volatility:", portfolio_vol, "\n")
+  
+  # Calculate marginal risk contribution (fixed division issue)
+  marginal_risk_contribution <- (Sigma %*% w) / as.numeric(portfolio_vol)
+  cat("Marginal risk contribution:", marginal_risk_contribution, "\n")
+  
+  # Calculate risk contribution
+  risk_contribution <- w * marginal_risk_contribution
+  cat("Risk contribution:", risk_contribution, "\n")
+  
+  # Return objective function value (difference in risk contributions)
+  return(sum((risk_contribution - mean(risk_contribution))^2))  # Minimize difference in risk contributions
 }
 
-# Leverage constraint function: sum of weights should equal 1.5
-leverage_constraint <- function(w) {
-  sum(w) - 1.5
-}
 
-# Set up initial weights (equal weights) but leverage so 1.5
-w0 <- c(0.75, 0.75)
+# Initial guess for weights
+initial_weights <- c(0.75, 0.75)
 
-# Set optimization bounds
-lower_bounds <- c(0, 0)
-upper_bounds <- c(1.5, 1.5)
-
-# Solve the optimization problem using nloptr
-opt <- nloptr(
-  x0 = w0,
+# Call the optimizer with debugging output
+opt_result <- nloptr(
+  x0 = initial_weights,
   eval_f = function(w) risk_parity_objective(w, Sigma),
-  lb = lower_bounds,
-  ub = upper_bounds,
-  eval_g_eq = leverage_constraint,  # Enforce leverage constraint
-  opts = list("algorithm" = "NLOPT_LD_SLSQP", "xtol_rel" = 1e-6)
+  eval_g_ineq = function(w) weight_sum_constraint(w),
+  lb = lb, ub = ub,
+  opts = list(algorithm = "NLOPT_LN_COBYLA", xtol_rel = 1e-8)
 )
 
-# Optimal weights extraction
-optimal_weights <- opt$solution
-optimal_weights
+
+# Print optimal weights and volatility
+# Extract optimal weights
+optimal_weights <- opt_result$solution
+# Print optimal weights
+cat("LRP Optimal Weights (Stocks, Bonds):", optimal_weights, "\n") 
+
+# optimal portfolio return
+cat("LRP Optimal Portfolio Return:", optimal_portfolio_return, "\n")
+optimal_portfolio_return <- optimal_weights[1] * E_R_S + optimal_weights[2] * E_R_B
+
+#  optimal portfolio volatility
+optimal_portfolio_volatility <- sqrt(t(optimal_weights) %*% Sigma %*% optimal_weights)
+cat("LRP Optimal Portfolio Volatility:", optimal_portfolio_volatility, "\n")
+
 
 
 ####################################################################################################################
