@@ -123,6 +123,7 @@ inefficient_indices <- which(port_returns < gmv_return)
 # Plot the inefficient frontier (below GMV) with a dashed line
 plot(port_volatilities[inefficient_indices], port_returns[inefficient_indices], type = "l", col = "blue", lwd = 2, lty = 2,
      ylim = c(min(port_returns), max(port_returns)),
+     xlim = c(min(port_volatilities), max(port_volatilities)),
      xlab = "Portfolio Volatility", ylab = "Portfolio Expected Return",
      main = "Efficient Frontier with Global Minimum Variance Portfolio")
 
@@ -191,9 +192,6 @@ cat("Optimal Portfolio Return:", optimal_return, "\n")
 cat("Optimal Portfolio Volatility:", optimal_volatility, "\n")
 
 
-
-
-
 ####################################################################################################################
 ####################################################################################################################
 #---------------------------------------- D ------------------------------------------------------------------------
@@ -220,10 +218,6 @@ cat("Optimal Portfolio Volatility with leverage 50%:", optimal_volatility_levera
 
 
 
-
-
-
-
 ####################################################################################################################
 ####################################################################################################################
 #---------------------------------------- E ------------------------------------------------------------------------
@@ -231,6 +225,48 @@ cat("Optimal Portfolio Volatility with leverage 50%:", optimal_volatility_levera
 ####################################################################################################################
 
 
+
+
+
+
+
+
+
+
+####################################################################################################################
+####################################################################################################################
+#-------------------------- Efficient Frontier with all portfolios -------------------------------------------------
+####################################################################################################################
+####################################################################################################################
+
+# Plot the inefficient frontier (below GMV) with a dashed line
+plot(port_volatilities[inefficient_indices], port_returns[inefficient_indices], type = "l", col = "blue", lwd = 2, lty = 2,
+     ylim = c(min(port_returns), max(port_returns)),
+     xlim = c(min(port_volatilities), max(port_volatilities)),
+     xlab = "Portfolio Volatility", ylab = "Portfolio Expected Return",
+     main = "Efficient Frontier with Global Minimum Variance Portfolio")
+
+# Add the efficient frontier (above GMV) with a solid line
+lines(port_volatilities[efficient_indices], port_returns[efficient_indices], col = "blue", lwd = 2)
+
+# Highlight the Global Minimum Variance Portfolio (GMV)
+points(gmv_volatility, gmv_return, col = "purple", pch = 16, cex = 1.5)
+text(gmv_volatility, gmv_return, labels = "GMV Portfolio", pos = 4, col = "purple")
+
+# Highlight the 60/40 portfolio
+points(sigma_p, E_R_p, col = "blue", pch = 8, cex = 1.5)
+text(sigma_p, E_R_p, labels = "60/40 Strategy", pos = 1, col = "blue")
+
+# Highlight the Optimal portfolio
+points(optimal_volatility, optimal_return, col = "red", pch = 8, cex = 1.5)
+text(optimal_volatility, optimal_return, labels = "Mean-Variance Efficient", pos = 3, col = "red")
+
+# Highlight the 60/40 portfolio
+points(optimal_volatility_leverage, optimal_return_leverage, col = "green", pch = 8, cex = 1.5)
+text(optimal_volatility_leverage, optimal_return_leverage, labels = "Mean-Variance Efficient + Leverage", pos = 3, col = "green")
+
+# Add grid for better visualization
+grid()
 
 
 
