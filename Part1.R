@@ -5,32 +5,33 @@
 ####################################################################################################################
 set.seed(123)
 library(quadprog)
+library(nloptr)
 # RF and bonds from Data.R
 
 ## Split into subsets of subsets and cut timeline of the CSV file 6_Portfolios_ME_Prior_12_2.CSV
 # Average Value Weighted Returns -- Monthly
-MOMexp_Average_Value_Weighted_Returns_Monthly <- MOMexp_Average_Value_Weighted_Returns_Monthly[757:1164,]
+MOMexp_Average_Value_Weighted_Returns_Monthly_part1 <- MOMexp_Average_Value_Weighted_Returns_Monthly[757:1164,]
 # Average Equal Weighted Returns -- Monthly
-MOMexp_Average_Equal_Weighted_Returns_Monthly <- MOMexp_Average_Equal_Weighted_Returns_Monthly[757:1164,]
+MOMexp_Average_Equal_Weighted_Returns_Monthly_part1 <- MOMexp_Average_Equal_Weighted_Returns_Monthly[757:1164,]
 # Average Value Weighted Returns -- Annual
-MOMexp_Average_Value_Weighted_Returns_Annual <- MOMexp_Average_Value_Weighted_Returns_Annual[64:97,]
+MOMexp_Average_Value_Weighted_Returns_Annual_part1 <- MOMexp_Average_Value_Weighted_Returns_Annual[64:97,]
 # Average Equal Weighted Returns -- Annual
-MOMexp_Average_Equal_Weighted_Returns_Annual <- MOMexp_Average_Equal_Weighted_Returns_Annual[64:97,]
+MOMexp_Average_Equal_Weighted_Returns_Annual_part1 <- MOMexp_Average_Equal_Weighted_Returns_Annual[64:97,]
 # Number of Firms in Portfolios
-MOMexp_Number_of_Firms_in_Portfolios <- MOMexp_Number_of_Firms_in_Portfolios[757:1164,]
+MOMexp_Number_of_Firms_in_Portfolios_part1 <- MOMexp_Number_of_Firms_in_Portfolios[757:1164,]
 # Average Firm Size
-MOMexp_Average_Firm_Size <- MOMexp_Average_Firm_Size[757:1164,]
+MOMexp_Average_Firm_Size_part1 <- MOMexp_Average_Firm_Size[757:1164,]
 # Equally-Weighted Average of Prior Returns
-MOMexp_Equally_Weighted_Average_of_Prior_Returns <- MOMexp_Equally_Weighted_Average_of_Prior_Returns[757:1164,]
+MOMexp_Equally_Weighted_Average_of_Prior_Returns_part1 <- MOMexp_Equally_Weighted_Average_of_Prior_Returns[757:1164,]
 # Value-Weighted Average of Prior Returns
-MOMexp_Value_Weighted_Average_of_Prior_Returns <- MOMexp_Value_Weighted_Average_of_Prior_Returns[757:1164,]
+MOMexp_Value_Weighted_Average_of_Prior_Returns_part1 <- MOMexp_Value_Weighted_Average_of_Prior_Returns[757:1164,]
 
 
 
 # Remove the first column (assumed to be character) and keep only numeric columns
-num_firms <- MOMexp_Number_of_Firms_in_Portfolios[, -1]
-avg_firm_size <- MOMexp_Average_Firm_Size[, -1]
-avg_value_weighted_returns <- MOMexp_Average_Value_Weighted_Returns_Monthly[, -1]
+num_firms <- MOMexp_Number_of_Firms_in_Portfolios_part1[, -1]
+avg_firm_size <- MOMexp_Average_Firm_Size_part1[, -1]
+avg_value_weighted_returns <- MOMexp_Average_Value_Weighted_Returns_Monthly_part1[, -1]
 
 # Calculate the portfolio weights for all portfolios in one step
 portfolio_weights <- num_firms * avg_firm_size
@@ -49,12 +50,14 @@ w_B <- 0.40  # Weight in bonds
 
 # Expected return of portfolio
 E_R_S <- mean(market_return)/100  # Average stock return
-E_R_B <- mean(Bonds)  # Average bond return
+E_R_B <- mean(Bonds, na.rm = TRUE)  # Average bond return
 E_R_p <- w_S * E_R_S + w_B * E_R_B
 
 # Calculate volatility of stocks and bonds
 sigma_S <- sd(market_return/100)  # Volatility of stocks
-sigma_B <- sd(Bonds)  # Volatility of bonds
+sigma_B <- sd(Bonds, na.rm = TRUE)  # Volatility of bonds
+
+print(sigma_B^2)
 
 # Covariance between stocks and bonds
 covariance <- cov((market_return/100), Bonds, use = "pairwise.complete.obs")
@@ -156,6 +159,8 @@ covariance <- cov(market_return / 100, Bonds, use = "pairwise.complete.obs")
 # Define covar matrix for the assets
 cov_matrix <- matrix(c(sigma_S^2, covariance, covariance, sigma_B^2), nrow = 2)
 
+print(cov_matrix)
+  
 # Define expected returns vector
 expected_returns <- c(E_R_S, E_R_B)
 
