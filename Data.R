@@ -17,6 +17,7 @@ library(matrixStats) ### ColSds
 library(dplyr) ### Pipe-function
 library(lubridate) ### Date manipulations
 library(mice) ### Single imputation
+library(quadprog)
 ####################################################################################################################
 ####################################################################################################################
 #----------------------------------- Working Directory -------------------------------------------------------------
@@ -25,9 +26,6 @@ library(mice) ### Single imputation
 
 
 set.seed(123)
-setwd("C:/Users/youss/OneDrive - University of Copenhagen/PUK")
-
-
 ####################################################################################################################
 ####################################################################################################################
 #-------------------------- Kenneth R French Data Library Data -----------------------------------------------------
@@ -42,7 +40,7 @@ impute_data_monthly <- function(data) {
   
   # Check for missing values and impute if necessary
   if (anyNA(data)) {
-    imputed_data <- mice(data, m = 1, method = 'pmm', maxit = 50, seed = 123)
+    imputed_data <- mice(data, m = 5, method = 'pmm', maxit = 50, seed = 123)
     data <- complete(imputed_data)
   }
   
@@ -63,7 +61,7 @@ impute_data_annual <- function(data) {
     data <- complete(imputed_data)
   }
   
-
+  
   data[[1]] <- as.numeric(data[[1]])
   return(data)
 }
@@ -121,8 +119,8 @@ MOMexp_Average_Value_Weighted_Returns_Monthly <- impute_data_monthly(MOMexp_Aver
 MOMexp_Average_Equal_Weighted_Returns_Monthly <- impute_data_monthly(MOMexp_Average_Equal_Weighted_Returns_Monthly)
 MOMexp_Average_Value_Weighted_Returns_Annual <- impute_data_annual(MOMexp_Average_Value_Weighted_Returns_Annual)
 MOMexp_Average_Equal_Weighted_Returns_Annual <- impute_data_annual(MOMexp_Average_Equal_Weighted_Returns_Annual)
-MOMexp_Number_of_Firms_in_Portfolios <- impute_data(MOMexp_Number_of_Firms_in_Portfolios)
-MOMexp_Average_Firm_Size <- impute_data(MOMexp_Average_Firm_Size)
+MOMexp_Number_of_Firms_in_Portfolios <- impute_data_monthly(MOMexp_Number_of_Firms_in_Portfolios)
+MOMexp_Average_Firm_Size <- impute_data_monthly(MOMexp_Average_Firm_Size)
 MOMexp_Equally_Weighted_Average_of_Prior_Returns <- impute_data_monthly(MOMexp_Equally_Weighted_Average_of_Prior_Returns)
 MOMexp_Value_Weighted_Average_of_Prior_Returns <- impute_data_monthly(MOMexp_Value_Weighted_Average_of_Prior_Returns)
 
@@ -205,7 +203,10 @@ colSums(is.na(TSYdata))
 TSYdata$Date <- as.Date(TSYdata$Date, format = "%m/%d/%y")
 
 # OBS: for some reason x2.Mo won't remove NA's in X2.M0; suspect it is because of high missingness with high colinearity
-TSYdata <- impute_data(TSYdata)
+TSYdata_imputed <- mice(TSYdata, m = 5, method = 'pmm', maxit = 50, seed = 123)
+
+# Extract completed data
+TSYdata <- complete(TSYdata_imputed)
 
 # OBS: we can use median instead?! maybe + some bps depending on date?!
 TSYdata$X2.Mo[is.na(TSYdata$X2.Mo)] <- median(TSYdata$X2.Mo, na.rm = TRUE)
@@ -223,10 +224,13 @@ TSYdata_dec <- TSYdata %>%
   mutate(across(-Date, ~ .x / 100)) # This converts all columns except Date to decimals
 
 # Resample to monthly data using the last value in each month
-monthly_TS <- TSYdata_dec %>%
-  group_by(month = floor_date(Date, "month")) %>%
-  slice_tail(n = 1) %>%
-  ungroup()
+monthly_TS <- TSYdata %>%
+  mutate(YnM = floor_date(Date, "month")) %>%
+  group_by(YnM) %>%
+  slice_max(Date, with_ties = FALSE) %>%  # Get the last row for each month
+  ungroup() %>%
+  arrange(YnM)
+
 
 # Define the PV and get_r functions
 PV <- function(C, Y, T) {
@@ -280,4 +284,3 @@ avg_1990_Jan <- avg_1990_Jan/100
 
 Bonds[1] <- avg_1990_Jan[11]
 RF <- FFdata_Monthly_Factors$RF ### RF rate
-
