@@ -140,6 +140,7 @@ Dependent <- MOMdep %>%
   mutate(ExcessReturn = MOMdep - RF,
          MarketExcessReturn = MOMexp - RF)
 
+RF <- FFdata_Monthly_Factors$RF ### RF rate
 Part2Data <- data.frame("RF" = RF,
                         "ExcessReturn" = market_return_dep - RF,
                         "MarketExcessReturn" = market_return_exp - RF,
