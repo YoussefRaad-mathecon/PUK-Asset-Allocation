@@ -114,27 +114,26 @@ market_return_dep <- rowSums(avg_value_weighted_returns * portfolio_weights) / t
 
 
 ### Small-minus-big factor from MOMexp
-SMB <- 1/3 * (MOMexp_Average_Value_Weighted_Returns_Monthly_part2$'SMALL_LoPRIOR'
-                + MOMexp_Average_Value_Weighted_Returns_Monthly_part2$'ME1_PRIOR2' 
-                + MOMexp_Average_Value_Weighted_Returns_Monthly_part2$'SMALL_HiPRIOR') -
-  1/3 * (MOMexp_Average_Value_Weighted_Returns_Monthly_part2$'BIG_LoPRIOR' 
-           + MOMexp_Average_Value_Weighted_Returns_Monthly_part2$'ME2_PRIOR2' 
-           + MOMexp_Average_Value_Weighted_Returns_Monthly_part2$'BIG_HiPRIOR')
+SMB <- 1/3 * (MOMexp_Average_Value_Weighted_Returns_Monthly_part2$'SMALL.LoPRIOR'
+                + MOMexp_Average_Value_Weighted_Returns_Monthly_part2$'ME1.PRIOR2' 
+                + MOMexp_Average_Value_Weighted_Returns_Monthly_part2$'SMALL.HiPRIOR') -
+  1/3 * (MOMexp_Average_Value_Weighted_Returns_Monthly_part2$'BIG.LoPRIOR' 
+           + MOMexp_Average_Value_Weighted_Returns_Monthly_part2$'ME2.PRIOR2' 
+           + MOMexp_Average_Value_Weighted_Returns_Monthly_part2$'BIG.HiPRIOR')
 
 
 ### Momentum factor from MOMexp
-MOM <- 1/2 * (MOMexp_Average_Value_Weighted_Returns_Monthly_part2$'SMALL_HiPRIOR'
-              + MOMexp_Average_Value_Weighted_Returns_Monthly_part2$'BIG_HiPRIOR') -
-  1/2 * (MOMexp_Average_Value_Weighted_Returns_Monthly_part2$'SMALL_LoPRIOR' 
-         + MOMexp_Average_Value_Weighted_Returns_Monthly_part2$'BIG_LoPRIOR')
+MOM <- 1/2 * (MOMexp_Average_Value_Weighted_Returns_Monthly_part2$'SMALL.HiPRIOR'
+              + MOMexp_Average_Value_Weighted_Returns_Monthly_part2$'BIG.HiPRIOR') -
+  1/2 * (MOMexp_Average_Value_Weighted_Returns_Monthly_part2$'SMALL.LoPRIOR' 
+         + MOMexp_Average_Value_Weighted_Returns_Monthly_part2$'BIG.LoPRIOR')
 
 
 
 ### Data frame for regression
-RF <- FFdata_Monthly_Factors$RF ### RF rate
-Part2Data <- data.frame("RF" = RF,
-                        "ExcessReturn" = market_return_dep - RF,
-                        "MarketExcessReturn" = market_return_exp - RF,
+Part2Data <- data.frame("RF" = FFdata_Monthly_Factors$RF[1:1164],
+                        "ExcessReturn" = market_return_dep - FFdata_Monthly_Factors$RF[1:1164],
+                        "MarketExcessReturn" = market_return_exp - FFdata_Monthly_Factors$RF[1:1164],
                         "SMB" = SMB,
                         "MOM" = MOM)
 
