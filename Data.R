@@ -75,6 +75,8 @@ FFdata <- read.csv("F-F_Research_Data_Factors.CSV", header = TRUE, sep = ",", sk
 colnames(FFdata) <- c("Date", "Mkt_RF", "SMB", "HML", "RF")
 FFdata_Monthly_Factors <- FFdata[7:1177,] #start from 7 to match MOMexp data
 FFdata_Annual_Factors <- FFdata[1180:1276,]
+row.names(FFdata_Monthly_Factors) <- NULL
+row.names(FFdata_Annual_Factors) <- NULL
 
 # Convert Monthly/Annual Factors to numeric (except for the Date column)
 FFdata_Monthly_Factors[, 2:5] <- lapply(FFdata_Monthly_Factors[, 2:5], as.numeric)
@@ -185,8 +187,6 @@ MOMdep_Number_of_Firms_in_Portfolios <- impute_data_monthly(MOMdep_Number_of_Fir
 MOMdep_Average_Firm_Size <- impute_data_monthly(MOMdep_Average_Firm_Size)
 MOMdep_Equally_Weighted_Average_of_Prior_Returns <- impute_data_monthly(MOMdep_Equally_Weighted_Average_of_Prior_Returns)
 MOMdep_Value_Weighted_Average_of_Prior_Returns <- impute_data_monthly(MOMdep_Value_Weighted_Average_of_Prior_Returns)
-
-
 
 ####################################################################################################################
 ####################################################################################################################
