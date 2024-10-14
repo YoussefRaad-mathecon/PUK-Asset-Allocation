@@ -113,7 +113,7 @@ total_weight <- rowSums(portfolio_weights)
 market_return_dep <- rowSums(avg_value_weighted_returns * portfolio_weights) / total_weight
 
 
-# Small-minus-big factor from MOMexp
+### Small-minus-big factor from MOMexp
 SMB <- 1/3 * (MOMexp_Average_Value_Weighted_Returns_Monthly_part2$'SMALL_LoPRIOR'
                 + MOMexp_Average_Value_Weighted_Returns_Monthly_part2$'ME1_PRIOR2' 
                 + MOMexp_Average_Value_Weighted_Returns_Monthly_part2$'SMALL_HiPRIOR') -
@@ -121,25 +121,16 @@ SMB <- 1/3 * (MOMexp_Average_Value_Weighted_Returns_Monthly_part2$'SMALL_LoPRIOR
            + MOMexp_Average_Value_Weighted_Returns_Monthly_part2$'ME2_PRIOR2' 
            + MOMexp_Average_Value_Weighted_Returns_Monthly_part2$'BIG_HiPRIOR')
 
-MOMexp <- MOMexp %>%
-  mutate(SMB = (1/3) * ('SMALL_LoPRIOR' + 'ME1_PRIOR2' + 'SMALL_HiPRIOR') -
-           (1/3) * ('BIG_LoPRIOR' + 'ME2_PRIOR2' + 'BIG_HiPRIOR'))
 
-# Momentum factor from MOMexp
+### Momentum factor from MOMexp
 MOM <- 1/2 * (MOMexp_Average_Value_Weighted_Returns_Monthly_part2$'SMALL_HiPRIOR'
               + MOMexp_Average_Value_Weighted_Returns_Monthly_part2$'BIG_HiPRIOR') -
   1/2 * (MOMexp_Average_Value_Weighted_Returns_Monthly_part2$'SMALL_LoPRIOR' 
          + MOMexp_Average_Value_Weighted_Returns_Monthly_part2$'BIG_LoPRIOR')
 
-MOMexp <- MOMexp %>%
-  mutate(MOM = (1/2) * ('SMALL_HiPRIOR' + 'BIG_HiPRIOR') -
-           (1/2) * ('SMALL_LoPRIOR' + 'BIG_LoPRIOR'))
 
-# Prepare the dependent variable: MOMdep - RF excess return
-Dependent <- MOMdep %>%
-  mutate(ExcessReturn = MOMdep - RF,
-         MarketExcessReturn = MOMexp - RF)
 
+### Data frame for regression
 RF <- FFdata_Monthly_Factors$RF ### RF rate
 Part2Data <- data.frame("RF" = RF,
                         "ExcessReturn" = market_return_dep - RF,
