@@ -34,9 +34,11 @@ setwd("C:/Users/youss/OneDrive - University of Copenhagen/PUK")
 ####################################################################################################################
 ####################################################################################################################
 # Functions to convert character columns to numeric and impute missing values
-impute_data <- function(data) {
-  # Convert all columns except the first to numeric
-  data[-1] <- lapply(data[-1], function(x) as.numeric(as.character(x)))
+
+impute_data_monthly <- function(data) {
+  
+  # Convert all other columns to numeric and reassemble into a dataframe
+  data <- as.data.frame(lapply(data, function(x) as.numeric(as.character(x))))
   
   # Check for missing values and impute if necessary
   if (anyNA(data)) {
@@ -44,31 +46,16 @@ impute_data <- function(data) {
     data <- complete(imputed_data)
   }
   
-  return(data)
-}
-# YYYYMM format
-impute_data_monthly <- function(data) {
   # Convert the first column (dates in YYYYMM) to Date format
   data[[1]] <- as.Date(paste0(substr(data[[1]], 1, 4), "-", substr(data[[1]], 5, 6), "-01"))
-  
-  # Convert all other columns to numeric
-  data[-1] <- lapply(data[-1], function(x) as.numeric(as.character(x)))
-  
-  # Check for missing values and impute if necessary
-  if (anyNA(data)) {
-    imputed_data <- mice(data, m = 1, method = 'pmm', maxit = 50, seed = 123)
-    data <- complete(imputed_data)
-  }
-  
   return(data)
 }
-# YYYY format
+
+
 impute_data_annual <- function(data) {
-  # Convert the first column (dates in YYYY) to numeric (to ensure it's a year)
-  data[[1]] <- as.numeric(as.character(data[[1]]))
   
-  # Convert all other columns to numeric
-  data[-1] <- lapply(data[-1], function(x) as.numeric(as.character(x)))
+  # Convert all other columns to numeric and reassemble into a dataframe
+  data <- as.data.frame(lapply(data, function(x) as.numeric(as.character(x))))
   
   # Check for missing values and impute if necessary
   if (anyNA(data)) {
@@ -76,8 +63,12 @@ impute_data_annual <- function(data) {
     data <- complete(imputed_data)
   }
   
+
+  data[[1]] <- as.numeric(data[[1]])
   return(data)
 }
+
+
 
 ### FF data
 FFdata <- read.csv("F-F_Research_Data_Factors.CSV", header = TRUE, sep = ",", skip = 3, fill = TRUE, strip.white = TRUE)
@@ -153,35 +144,35 @@ colSums(is.na(MOMdep))
 
 
 # Average Value Weighted Returns -- Monthly
-MOMdep_Average_Value_Weighted_Returns_Monthly <- MOMexp[1:1171,]
+MOMdep_Average_Value_Weighted_Returns_Monthly <- MOMdep[1:1171,]
 row.names(MOMdep_Average_Value_Weighted_Returns_Monthly) <- NULL
 
 # Average Equal Weighted Returns -- Monthly
-MOMdep_Average_Equal_Weighted_Returns_Monthly <- MOMexp[1174:2344,]
+MOMdep_Average_Equal_Weighted_Returns_Monthly <- MOMdep[1174:2344,]
 row.names(MOMdep_Average_Equal_Weighted_Returns_Monthly) <- NULL
 
 # Average Value Weighted Returns -- Annual
-MOMdep_Average_Value_Weighted_Returns_Annual <- MOMexp[2347:2443,]
+MOMdep_Average_Value_Weighted_Returns_Annual <- MOMdep[2347:2443,]
 row.names(MOMdep_Average_Value_Weighted_Returns_Annual) <- NULL
 
 # Average Equal Weighted Returns -- Annual
-MOMdep_Average_Equal_Weighted_Returns_Annual <- MOMexp[2446:2542,]
+MOMdep_Average_Equal_Weighted_Returns_Annual <- MOMdep[2446:2542,]
 row.names(MOMdep_Average_Equal_Weighted_Returns_Annual) <- NULL
 
 # Number of Firms in Portfolios
-MOMdep_Number_of_Firms_in_Portfolios <- MOMexp[2545:3715,]
+MOMdep_Number_of_Firms_in_Portfolios <- MOMdep[2545:3715,]
 row.names(MOMdep_Number_of_Firms_in_Portfolios) <- NULL
 
 # Average Firm Size
-MOMdep_Average_Firm_Size <- MOMexp[3718:4888,]
+MOMdep_Average_Firm_Size <- MOMdep[3718:4888,]
 row.names(MOMdep_Average_Firm_Size) <- NULL
 
 # Equally-Weighted Average of Prior Returns
-MOMdep_Equally_Weighted_Average_of_Prior_Returns <- MOMexp[4891:6061,]
+MOMdep_Equally_Weighted_Average_of_Prior_Returns <- MOMdep[4891:6061,]
 row.names(MOMdep_Equally_Weighted_Average_of_Prior_Returns) <- NULL
 
 # Value-Weighted Average of Prior Returns
-MOMdep_Value_Weighted_Average_of_Prior_Returns <- MOMexp[6064:7234,]
+MOMdep_Value_Weighted_Average_of_Prior_Returns <- MOMdep[6064:7234,]
 row.names(MOMdep_Value_Weighted_Average_of_Prior_Returns) <- NULL
 
 
@@ -190,8 +181,8 @@ MOMdep_Average_Value_Weighted_Returns_Monthly <- impute_data_monthly(MOMdep_Aver
 MOMdep_Average_Equal_Weighted_Returns_Monthly <- impute_data_monthly(MOMdep_Average_Equal_Weighted_Returns_Monthly)
 MOMdep_Average_Value_Weighted_Returns_Annual <- impute_data_annual(MOMdep_Average_Value_Weighted_Returns_Annual)
 MOMdep_Average_Equal_Weighted_Returns_Annual <- impute_data_annual(MOMdep_Average_Equal_Weighted_Returns_Annual)
-MOMdep_Number_of_Firms_in_Portfolios <- impute_data(MOMdep_Number_of_Firms_in_Portfolios)
-MOMdep_Average_Firm_Size <- impute_data(MOMdep_Average_Firm_Size)
+MOMdep_Number_of_Firms_in_Portfolios <- impute_data_monthly(MOMdep_Number_of_Firms_in_Portfolios)
+MOMdep_Average_Firm_Size <- impute_data_monthly(MOMdep_Average_Firm_Size)
 MOMdep_Equally_Weighted_Average_of_Prior_Returns <- impute_data_monthly(MOMdep_Equally_Weighted_Average_of_Prior_Returns)
 MOMdep_Value_Weighted_Average_of_Prior_Returns <- impute_data_monthly(MOMdep_Value_Weighted_Average_of_Prior_Returns)
 
