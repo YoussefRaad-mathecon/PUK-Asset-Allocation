@@ -152,23 +152,38 @@ colSums(is.na(MOMdep))
 #0             0             0            18             0             0             0             0 
 
 
-## Split into subsets of the CSV file 25_Portfolios_ME_Prior_12_2.CSV
-#Average Value Weighted Returns -- Monthly
+# Average Value Weighted Returns -- Monthly
 MOMdep_Average_Value_Weighted_Returns_Monthly <- MOMexp[1:1171,]
+row.names(MOMdep_Average_Value_Weighted_Returns_Monthly) <- NULL
+
 # Average Equal Weighted Returns -- Monthly
 MOMdep_Average_Equal_Weighted_Returns_Monthly <- MOMexp[1174:2344,]
+row.names(MOMdep_Average_Equal_Weighted_Returns_Monthly) <- NULL
+
 # Average Value Weighted Returns -- Annual
 MOMdep_Average_Value_Weighted_Returns_Annual <- MOMexp[2347:2443,]
+row.names(MOMdep_Average_Value_Weighted_Returns_Annual) <- NULL
+
 # Average Equal Weighted Returns -- Annual
 MOMdep_Average_Equal_Weighted_Returns_Annual <- MOMexp[2446:2542,]
+row.names(MOMdep_Average_Equal_Weighted_Returns_Annual) <- NULL
+
 # Number of Firms in Portfolios
 MOMdep_Number_of_Firms_in_Portfolios <- MOMexp[2545:3715,]
+row.names(MOMdep_Number_of_Firms_in_Portfolios) <- NULL
+
 # Average Firm Size
 MOMdep_Average_Firm_Size <- MOMexp[3718:4888,]
+row.names(MOMdep_Average_Firm_Size) <- NULL
+
 # Equally-Weighted Average of Prior Returns
 MOMdep_Equally_Weighted_Average_of_Prior_Returns <- MOMexp[4891:6061,]
+row.names(MOMdep_Equally_Weighted_Average_of_Prior_Returns) <- NULL
+
 # Value-Weighted Average of Prior Returns
 MOMdep_Value_Weighted_Average_of_Prior_Returns <- MOMexp[6064:7234,]
+row.names(MOMdep_Value_Weighted_Average_of_Prior_Returns) <- NULL
+
 
 # Impute each dataset and overwrite the original for consistency
 MOMdep_Average_Value_Weighted_Returns_Monthly <- impute_data_monthly(MOMdep_Average_Value_Weighted_Returns_Monthly)
@@ -212,32 +227,53 @@ sum(is.na(TSYdata)) # 20258 NA's
 ####################################################################################################################
 ####################################################################################################################
 
-### Define the present value function
+# Convert yields from percentages to decimal values
+TSYdata_dec <- TSYdata %>%
+  mutate(across(-Date, ~ .x / 100)) # This converts all columns except Date to decimals
+
+# Resample to monthly data using the last value in each month
+monthly_TS <- TSYdata_dec %>%
+  group_by(month = floor_date(Date, "month")) %>%
+  slice_tail(n = 1) %>%
+  ungroup()
+
+# Define the PV and get_r functions
 PV <- function(C, Y, T) {
-  ### Ensure yields are in decimal form
-  ### Payment dates (annual coupon payments, i.e. 1Y steps)
-  t_j <- seq(1, T)
-  
-  ### Calculate the present value for coupon payments
-  coupon_PV <- sum(C / (1 + Y) ^ t_j)
-  
-  ### Calculate the present value for the principal repayment at time T
-  principal_PV <- 1 / (1 + Y) ^ T
-  
-  ### Total present value
-  PV_value <- coupon_PV + principal_PV
-  
-  return(PV_value)
+  pv <- 0
+  if (T == 10) {
+    t_j <- seq(1, 9)
+  } else {
+    t_j <- seq(1, 9) - 1/12
+  }
+  for (i in t_j) {
+    pv <- pv + C / (1 + Y)^i
+  }
+  pv <- pv + C / (1 + Y)^T + 1 / (1 + Y)^T
+  return(pv)
 }
 
+get_r <- function(Yim1, Yi) {
+  Ti <- 10  # Fixed value for the 10-year maturity
+  Tim1 <- Ti - 1/12  # Previous time step (1 month earlier)
+  
+  pv1 <- PV(Yim1, Yi, Tim1)  # Present value with shifted yield and current yield
+  pv2 <- PV(Yim1, Yim1, Ti)  # Present value with shifted yield twice
+  
+  # Return the relative change in present values
+  r <- pv1 / pv2 - 1
+  return(r)
+}
 
-## something is wrong here
-MonthlyYields <- TSYdata %>%
-  mutate(YnM = floor_date(Date, "month")) %>%
-  group_by(YnM) %>%
-  slice_head(n = 1) %>%  ### Get the first row for each month (which is the last date of the month)
-  ungroup() %>%
-  arrange(YnM)  ### Optionally, sort by month for better readability
+# Compute the monthly returns for the 10-Year yield
+monthly_TS <- monthly_TS %>%
+  mutate(X10.Yr.1M = lag(X10.Yr),
+         X10.Yr.Return = mapply(get_r, X10.Yr.1M, X10.Yr))
+
+monthly_TS <- monthly_TS %>%
+  mutate(`10 Yr m1` = lag(`X10.Yr`),  # Shift the 10-Year yield by one month
+         `10YrReturns` = mapply(get_r, `10 Yr m1`, `X10.Yr`))  # Apply the function element-wise
+
+Bonds <- monthly_TS$X10.Yr.Return
 
 
 # Filter the data 1990-01-02 to 1990-01-31
@@ -247,44 +283,10 @@ TSYdata_1990_Jan <- TSYdata %>%
 # Calculate the mean for each bond
 avg_1990_Jan <- colMeans(TSYdata_1990_Jan[, c("X1.Mo", "X2.Mo", "X3.Mo", "X4.Mo", "X6.Mo", 
                                               "X1.Yr", "X2.Yr", "X3.Yr", "X5.Yr", "X7.Yr", 
-                                              "X10.Yr", "X20.Yr", "X30.Yr")], na.rm = TRUE)
+                                              "X10.Yr", "X20.Yr", "X30.Yr")])
 avg_1990_Jan <- avg_1990_Jan/100
-# Remove date
-MonthlyYields_clean <- MonthlyYields[, c("X1.Mo", "X2.Mo", "X3.Mo", "X4.Mo", "X6.Mo", 
-                                         "X1.Yr", "X2.Yr", "X3.Yr", "X5.Yr", "X7.Yr", 
-                                         "X10.Yr", "X20.Yr", "X30.Yr")]
 
-mat <- c(1/12, 2/12, 3/12, 4/12, 6/12, 1, 2, 3, 5, 7, 10, 20, 30)  # Maturities
 
-# Initialize the MonthlyReturn data frame
-MonthlyReturn <- data.frame(Date = MonthlyYields$Date)
+Bonds[1] <- avg_1990_Jan[11]
+RF <- FFdata_Monthly_Factors$RF ### RF rate
 
-# Loop through each row to calculate the monthly returns (starting from the second row)
-for (i in 2:nrow(MonthlyYields_clean)) {
-  for (j in 1:ncol(MonthlyYields_clean)) {   # Loop through each maturity column
-    Y_prev <- MonthlyYields_clean[i - 1, j]  # Previous period yield
-    Y_current <- MonthlyYields_clean[i, j]   # Current period yield
-    
-    T <- mat[j]  # Maturity for the current column
-    
-    # Calculate present values
-    PV_Y_current <- PV(Y_prev, Y_current, T - 1/12)  # PV(Y_{i-1}; Y_i, T - 1M)
-    PV_Y_prev <- PV(Y_prev, Y_prev, T)               # PV(Y_{i-1}; Y_{i-1}, T)
-    
-    # Calculate the return
-    r_i <- (PV_Y_current / PV_Y_prev) - 1
-    
-    # Store the return in the MonthlyReturn data frame
-    MonthlyReturn[i, j + 1] <- r_i  # Adjust for the Date column
-  }
-}
-
-# Name the columns of MonthlyReturn to match MonthlyYields_clean
-colnames(MonthlyReturn)[-1] <- colnames(MonthlyYields_clean)
-
-# Replace the first row of MonthlyReturn with the averages calculated from 1990-01-02 to 1990-01-31
-MonthlyReturn[1, -1] <- avg_1990_Jan
-
-### View the results
-head(MonthlyReturn)
-tail(MonthlyReturn)
