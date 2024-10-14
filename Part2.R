@@ -29,14 +29,10 @@ setwd("C:/Users/youss/OneDrive - University of Copenhagen/PUK")
 
 ####################################################################################################################
 ####################################################################################################################
-#----------------------------------- Data preperation -------------------------------------------------------------
+#------------------------------------------- A ---------------------------------------------------------------------
 ####################################################################################################################
 ####################################################################################################################
-####################################################################################################################
-####################################################################################################################
-#------------------------------- Current Investment Universe -------------------------------------------------------
-####################################################################################################################
-####################################################################################################################
+
 set.seed(123)
 library(quadprog)
 # RF and bonds from Data.R
@@ -131,13 +127,235 @@ MOM <- 1/2 * (MOMexp_Average_Value_Weighted_Returns_Monthly_part2$'SMALL.HiPRIOR
 
 
 ### Data frame for regression
-Part2Data <- data.frame("RF" = FFdata_Monthly_Factors$RF[1:1164],
+Part2Full <- data.frame("RF" = FFdata_Monthly_Factors$RF[1:1164],
                         "ExcessReturn" = market_return_dep - FFdata_Monthly_Factors$RF[1:1164],
                         "MarketExcessReturn" = market_return_exp - FFdata_Monthly_Factors$RF[1:1164],
                         "SMB" = SMB,
                         "MOM" = MOM)
 
 
-Regression <- lm(formula = ExcessReturn ~ MarketExcessReturn + SMB + MOM, data = Part2Data)
+RegressionFull <- lm(formula = ExcessReturn ~ MarketExcessReturn + SMB + MOM, data = Part2Full)
+
+
+
+
+
+
+####################################################################################################################
+####################################################################################################################
+#------------------------------------------- B ---------------------------------------------------------------------
+####################################################################################################################
+####################################################################################################################
+
+####################################################################################################################
+#----------------------------------- Pre Fama-French ---------------------------------------------------------------
+####################################################################################################################
+
+
+
+### MOMexp
+# Remove the first column (assumed to be character) and keep only numeric columns
+num_firms <- MOMexp_Number_of_Firms_in_Portfolios[1:438, -1]
+avg_firm_size <- MOMexp_Average_Firm_Size[1:438, -1]
+avg_value_weighted_returns <- MOMexp_Average_Value_Weighted_Returns_Monthly[1:438, -1]
+
+# Calculate the portfolio weights for all portfolios in one step
+portfolio_weights <- num_firms * avg_firm_size
+
+# Calculate total weight by summing all portfolio weights
+total_weight <- rowSums(portfolio_weights)
+
+# Calculate the market return using vectorized operations
+market_return_exp <- rowSums(avg_value_weighted_returns * portfolio_weights) / total_weight
+
+
+
+### MOMdep
+# Remove the first column (assumed to be character) and keep only numeric columns
+num_firms <- MOMdep_Number_of_Firms_in_Portfolios[1:438, -1]
+avg_firm_size <- MOMdep_Average_Firm_Size[1:438, -1]
+avg_value_weighted_returns <- MOMdep_Average_Value_Weighted_Returns_Monthly[1:438, -1]
+
+# Calculate the portfolio weights for all portfolios in one step
+portfolio_weights <- num_firms * avg_firm_size
+
+# Calculate total weight by summing all portfolio weights
+total_weight <- rowSums(portfolio_weights)
+
+# Calculate the market return using vectorized operations
+market_return_dep <- rowSums(avg_value_weighted_returns * portfolio_weights) / total_weight
+
+
+### Small-minus-big factor from MOMexp
+SMB <- 1/3 * (MOMexp_Average_Value_Weighted_Returns_Monthly[1:438,]$'SMALL.LoPRIOR'
+              + MOMexp_Average_Value_Weighted_Returns_Monthly[1:438,]$'ME1.PRIOR2' 
+              + MOMexp_Average_Value_Weighted_Returns_Monthly[1:438,]$'SMALL.HiPRIOR') -
+  1/3 * (MOMexp_Average_Value_Weighted_Returns_Monthly[1:438,]$'BIG.LoPRIOR' 
+         + MOMexp_Average_Value_Weighted_Returns_Monthly[1:438,]$'ME2.PRIOR2' 
+         + MOMexp_Average_Value_Weighted_Returns_Monthly[1:438,]$'BIG.HiPRIOR')
+
+
+### Momentum factor from MOMexp
+MOM <- 1/2 * (MOMexp_Average_Value_Weighted_Returns_Monthly[1:438,]$'SMALL.HiPRIOR'
+              + MOMexp_Average_Value_Weighted_Returns_Monthly[1:438,]$'BIG.HiPRIOR') -
+  1/2 * (MOMexp_Average_Value_Weighted_Returns_Monthly[1:438,]$'SMALL.LoPRIOR' 
+         + MOMexp_Average_Value_Weighted_Returns_Monthly[1:438,]$'BIG.LoPRIOR')
+
+
+
+### Data frame for regression
+PreFF <- data.frame("RF" = FFdata_Monthly_Factors$RF[1:438],
+                        "ExcessReturn" = market_return_dep - FFdata_Monthly_Factors$RF[1:438],
+                        "MarketExcessReturn" = market_return_exp - FFdata_Monthly_Factors$RF[1:438],
+                        "SMB" = SMB,
+                        "MOM" = MOM)
+
+
+Regression_PreFF <- lm(formula = ExcessReturn ~ MarketExcessReturn + SMB + MOM, data = PreFF)
+
+
+
+
+
+
+
+
+####################################################################################################################
+#--------------------------------- During Fama-French --------------------------------------------------------------
+####################################################################################################################
+
+
+### MOMexp
+# Remove the first column (assumed to be character) and keep only numeric columns
+num_firms <- MOMexp_Number_of_Firms_in_Portfolios[439:780, -1]
+avg_firm_size <- MOMexp_Average_Firm_Size[439:780, -1]
+avg_value_weighted_returns <- MOMexp_Average_Value_Weighted_Returns_Monthly[439:780, -1]
+
+# Calculate the portfolio weights for all portfolios in one step
+portfolio_weights <- num_firms * avg_firm_size
+
+# Calculate total weight by summing all portfolio weights
+total_weight <- rowSums(portfolio_weights)
+
+# Calculate the market return using vectorized operations
+market_return_exp <- rowSums(avg_value_weighted_returns * portfolio_weights) / total_weight
+
+
+
+### MOMdep
+# Remove the first column (assumed to be character) and keep only numeric columns
+num_firms <- MOMdep_Number_of_Firms_in_Portfolios[439:780, -1]
+avg_firm_size <- MOMdep_Average_Firm_Size[439:780, -1]
+avg_value_weighted_returns <- MOMdep_Average_Value_Weighted_Returns_Monthly[439:780, -1]
+
+# Calculate the portfolio weights for all portfolios in one step
+portfolio_weights <- num_firms * avg_firm_size
+
+# Calculate total weight by summing all portfolio weights
+total_weight <- rowSums(portfolio_weights)
+
+# Calculate the market return using vectorized operations
+market_return_dep <- rowSums(avg_value_weighted_returns * portfolio_weights) / total_weight
+
+
+### Small-minus-big factor from MOMexp
+SMB <- 1/3 * (MOMexp_Average_Value_Weighted_Returns_Monthly[439:780,]$'SMALL.LoPRIOR'
+              + MOMexp_Average_Value_Weighted_Returns_Monthly[439:780,]$'ME1.PRIOR2' 
+              + MOMexp_Average_Value_Weighted_Returns_Monthly[439:780,]$'SMALL.HiPRIOR') -
+  1/3 * (MOMexp_Average_Value_Weighted_Returns_Monthly[439:780,]$'BIG.LoPRIOR' 
+         + MOMexp_Average_Value_Weighted_Returns_Monthly[439:780,]$'ME2.PRIOR2' 
+         + MOMexp_Average_Value_Weighted_Returns_Monthly[439:780,]$'BIG.HiPRIOR')
+
+
+### Momentum factor from MOMexp
+MOM <- 1/2 * (MOMexp_Average_Value_Weighted_Returns_Monthly[439:780,]$'SMALL.HiPRIOR'
+              + MOMexp_Average_Value_Weighted_Returns_Monthly[439:780,]$'BIG.HiPRIOR') -
+  1/2 * (MOMexp_Average_Value_Weighted_Returns_Monthly[439:780,]$'SMALL.LoPRIOR' 
+         + MOMexp_Average_Value_Weighted_Returns_Monthly[439:780,]$'BIG.LoPRIOR')
+
+
+
+### Data frame for regression
+DuringFF <- data.frame("RF" = FFdata_Monthly_Factors$RF[439:780],
+                    "ExcessReturn" = market_return_dep - FFdata_Monthly_Factors$RF[439:780],
+                    "MarketExcessReturn" = market_return_exp - FFdata_Monthly_Factors$RF[439:780],
+                    "SMB" = SMB,
+                    "MOM" = MOM)
+
+
+Regression_DuringFF <- lm(formula = ExcessReturn ~ MarketExcessReturn + SMB + MOM, data = DuringFF)
+
+
+
+
+
+
+####################################################################################################################
+#---------------------------------- Post Fama-French ---------------------------------------------------------------
+####################################################################################################################
+
+
+### MOMexp
+# Remove the first column (assumed to be character) and keep only numeric columns
+num_firms <- MOMexp_Number_of_Firms_in_Portfolios[781:1164, -1]
+avg_firm_size <- MOMexp_Average_Firm_Size[781:1164, -1]
+avg_value_weighted_returns <- MOMexp_Average_Value_Weighted_Returns_Monthly[781:1164, -1]
+
+# Calculate the portfolio weights for all portfolios in one step
+portfolio_weights <- num_firms * avg_firm_size
+
+# Calculate total weight by summing all portfolio weights
+total_weight <- rowSums(portfolio_weights)
+
+# Calculate the market return using vectorized operations
+market_return_exp <- rowSums(avg_value_weighted_returns * portfolio_weights) / total_weight
+
+
+
+### MOMdep
+# Remove the first column (assumed to be character) and keep only numeric columns
+num_firms <- MOMdep_Number_of_Firms_in_Portfolios[781:1164, -1]
+avg_firm_size <- MOMdep_Average_Firm_Size[781:1164, -1]
+avg_value_weighted_returns <- MOMdep_Average_Value_Weighted_Returns_Monthly[781:1164, -1]
+
+# Calculate the portfolio weights for all portfolios in one step
+portfolio_weights <- num_firms * avg_firm_size
+
+# Calculate total weight by summing all portfolio weights
+total_weight <- rowSums(portfolio_weights)
+
+# Calculate the market return using vectorized operations
+market_return_dep <- rowSums(avg_value_weighted_returns * portfolio_weights) / total_weight
+
+
+### Small-minus-big factor from MOMexp
+SMB <- 1/3 * (MOMexp_Average_Value_Weighted_Returns_Monthly[781:1164,]$'SMALL.LoPRIOR'
+              + MOMexp_Average_Value_Weighted_Returns_Monthly[781:1164,]$'ME1.PRIOR2' 
+              + MOMexp_Average_Value_Weighted_Returns_Monthly[781:1164,]$'SMALL.HiPRIOR') -
+  1/3 * (MOMexp_Average_Value_Weighted_Returns_Monthly[781:1164,]$'BIG.LoPRIOR' 
+         + MOMexp_Average_Value_Weighted_Returns_Monthly[781:1164,]$'ME2.PRIOR2' 
+         + MOMexp_Average_Value_Weighted_Returns_Monthly[781:1164,]$'BIG.HiPRIOR')
+
+
+### Momentum factor from MOMexp
+MOM <- 1/2 * (MOMexp_Average_Value_Weighted_Returns_Monthly[781:1164,]$'SMALL.HiPRIOR'
+              + MOMexp_Average_Value_Weighted_Returns_Monthly[781:1164,]$'BIG.HiPRIOR') -
+  1/2 * (MOMexp_Average_Value_Weighted_Returns_Monthly[781:1164,]$'SMALL.LoPRIOR' 
+         + MOMexp_Average_Value_Weighted_Returns_Monthly[781:1164,]$'BIG.LoPRIOR')
+
+
+
+### Data frame for regression
+PostFF <- data.frame("RF" = FFdata_Monthly_Factors$RF[781:1164],
+                       "ExcessReturn" = market_return_dep - FFdata_Monthly_Factors$RF[781:1164],
+                       "MarketExcessReturn" = market_return_exp - FFdata_Monthly_Factors$RF[781:1164],
+                       "SMB" = SMB,
+                       "MOM" = MOM)
+
+
+Regression_PostFF <- lm(formula = ExcessReturn ~ MarketExcessReturn + SMB + MOM, data = PostFF)
+
+
+
 
 
