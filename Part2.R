@@ -125,19 +125,68 @@ MOM <- 1/2 * (MOMexp_Average_Value_Weighted_Returns_Monthly_part2$'SMALL.HiPRIOR
          + MOMexp_Average_Value_Weighted_Returns_Monthly_part2$'BIG.LoPRIOR')
 
 
-
 ### Data frame for regression
 Part2Full <- data.frame("RF" = FFdata_Monthly_Factors$RF[1:1164],
-                        "ExcessReturn" = market_return_dep - FFdata_Monthly_Factors$RF[1:1164],
+                        "RM" = market_return_exp,
                         "MarketExcessReturn" = market_return_exp - FFdata_Monthly_Factors$RF[1:1164],
                         "SMB" = SMB,
-                        "MOM" = MOM)
+                        "MOM" = MOM,
+                        "ExcessReturn_S_LPrior" = MOMdep_Average_Value_Weighted_Returns_Monthly[1:1164,2] - FFdata_Monthly_Factors$RF[1:1164],
+                        "ExcessReturn_S_2" = MOMdep_Average_Value_Weighted_Returns_Monthly[1:1164,3] - FFdata_Monthly_Factors$RF[1:1164],
+                        "ExcessReturn_S_3" = MOMdep_Average_Value_Weighted_Returns_Monthly[1:1164,4] - FFdata_Monthly_Factors$RF[1:1164],
+                        "ExcessReturn_S_4" = MOMdep_Average_Value_Weighted_Returns_Monthly[1:1164,5] - FFdata_Monthly_Factors$RF[1:1164],
+                        "ExcessReturn_S_HPrior" = MOMdep_Average_Value_Weighted_Returns_Monthly[1:1164,6] - FFdata_Monthly_Factors$RF[1:1164],
+                        "ExcessReturn_2_LPrior" = MOMdep_Average_Value_Weighted_Returns_Monthly[1:1164,7] - FFdata_Monthly_Factors$RF[1:1164],
+                        "ExcessReturn_2_2" = MOMdep_Average_Value_Weighted_Returns_Monthly[1:1164,8] - FFdata_Monthly_Factors$RF[1:1164],
+                        "ExcessReturn_2_3" = MOMdep_Average_Value_Weighted_Returns_Monthly[1:1164,9] - FFdata_Monthly_Factors$RF[1:1164],
+                        "ExcessReturn_2_4" = MOMdep_Average_Value_Weighted_Returns_Monthly[1:1164,10] - FFdata_Monthly_Factors$RF[1:1164],
+                        "ExcessReturn_2_HPrior" = MOMdep_Average_Value_Weighted_Returns_Monthly[1:1164,11] - FFdata_Monthly_Factors$RF[1:1164],
+                        "ExcessReturn_3_LPrior" = MOMdep_Average_Value_Weighted_Returns_Monthly[1:1164,12] - FFdata_Monthly_Factors$RF[1:1164],
+                        "ExcessReturn_3_2" = MOMdep_Average_Value_Weighted_Returns_Monthly[1:1164,13] - FFdata_Monthly_Factors$RF[1:1164],
+                        "ExcessReturn_3_3" = MOMdep_Average_Value_Weighted_Returns_Monthly[1:1164,14] - FFdata_Monthly_Factors$RF[1:1164],
+                        "ExcessReturn_3_4" = MOMdep_Average_Value_Weighted_Returns_Monthly[1:1164,15] - FFdata_Monthly_Factors$RF[1:1164],
+                        "ExcessReturn_3_HPrior" = MOMdep_Average_Value_Weighted_Returns_Monthly[1:1164,16] - FFdata_Monthly_Factors$RF[1:1164],
+                        "ExcessReturn_4_LPrior" = MOMdep_Average_Value_Weighted_Returns_Monthly[1:1164,17] - FFdata_Monthly_Factors$RF[1:1164],
+                        "ExcessReturn_4_2" = MOMdep_Average_Value_Weighted_Returns_Monthly[1:1164,18] - FFdata_Monthly_Factors$RF[1:1164],
+                        "ExcessReturn_4_3" = MOMdep_Average_Value_Weighted_Returns_Monthly[1:1164,19] - FFdata_Monthly_Factors$RF[1:1164],
+                        "ExcessReturn_4_4" = MOMdep_Average_Value_Weighted_Returns_Monthly[1:1164,20] - FFdata_Monthly_Factors$RF[1:1164],
+                        "ExcessReturn_4_HPrior" = MOMdep_Average_Value_Weighted_Returns_Monthly[1:1164,21] - FFdata_Monthly_Factors$RF[1:1164],
+                        "ExcessReturn_B_LPrior" = MOMdep_Average_Value_Weighted_Returns_Monthly[1:1164,22] - FFdata_Monthly_Factors$RF[1:1164],
+                        "ExcessReturn_B_2" = MOMdep_Average_Value_Weighted_Returns_Monthly[1:1164,23] - FFdata_Monthly_Factors$RF[1:1164],
+                        "ExcessReturn_B_3" = MOMdep_Average_Value_Weighted_Returns_Monthly[1:1164,24] - FFdata_Monthly_Factors$RF[1:1164],
+                        "ExcessReturn_B_4" = MOMdep_Average_Value_Weighted_Returns_Monthly[1:1164,25] - FFdata_Monthly_Factors$RF[1:1164],
+                        "ExcessReturn_B_HPrior" = MOMdep_Average_Value_Weighted_Returns_Monthly[1:1164,26] - FFdata_Monthly_Factors$RF[1:1164])
 
 
-RegressionFull <- lm(formula = ExcessReturn ~ MarketExcessReturn + SMB + MOM, data = Part2Full)
+RegressionFull_S_LPrior <- lm(formula = ExcessReturn_S_LPrior ~ MarketExcessReturn + SMB + MOM, data = Part2Full)
+RegressionFull_S_2 <- lm(formula = ExcessReturn_S_2 ~ MarketExcessReturn + SMB + MOM, data = Part2Full)
+RegressionFull_S_3 <- lm(formula = ExcessReturn_S_3 ~ MarketExcessReturn + SMB + MOM, data = Part2Full)
+RegressionFull_S_4 <- lm(formula = ExcessReturn_S_4 ~ MarketExcessReturn + SMB + MOM, data = Part2Full)
+RegressionFull_S_HPrior <- lm(formula = ExcessReturn_S_HPrior ~ MarketExcessReturn + SMB + MOM, data = Part2Full)
 
+RegressionFull_2_LPrior <- lm(formula = ExcessReturn_2_LPrior ~ MarketExcessReturn + SMB + MOM, data = Part2Full)
+RegressionFull_2_2 <- lm(formula = ExcessReturn_2_2 ~ MarketExcessReturn + SMB + MOM, data = Part2Full)
+RegressionFull_2_3 <- lm(formula = ExcessReturn_2_3 ~ MarketExcessReturn + SMB + MOM, data = Part2Full)
+RegressionFull_2_4 <- lm(formula = ExcessReturn_2_4 ~ MarketExcessReturn + SMB + MOM, data = Part2Full)
+RegressionFull_2_HPrior <- lm(formula = ExcessReturn_2_HPrior ~ MarketExcessReturn + SMB + MOM, data = Part2Full)
 
+RegressionFull_3_LPrior <- lm(formula = ExcessReturn_3_LPrior ~ MarketExcessReturn + SMB + MOM, data = Part2Full)
+RegressionFull_3_2 <- lm(formula = ExcessReturn_3_2 ~ MarketExcessReturn + SMB + MOM, data = Part2Full)
+RegressionFull_3_3 <- lm(formula = ExcessReturn_3_3 ~ MarketExcessReturn + SMB + MOM, data = Part2Full)
+RegressionFull_3_4 <- lm(formula = ExcessReturn_3_4 ~ MarketExcessReturn + SMB + MOM, data = Part2Full)
+RegressionFull_3_HPrior <- lm(formula = ExcessReturn_3_HPrior ~ MarketExcessReturn + SMB + MOM, data = Part2Full)
 
+RegressionFull_4_LPrior <- lm(formula = ExcessReturn_4_LPrior ~ MarketExcessReturn + SMB + MOM, data = Part2Full)
+RegressionFull_4_2 <- lm(formula = ExcessReturn_4_2 ~ MarketExcessReturn + SMB + MOM, data = Part2Full)
+RegressionFull_4_3 <- lm(formula = ExcessReturn_4_3 ~ MarketExcessReturn + SMB + MOM, data = Part2Full)
+RegressionFull_4_4 <- lm(formula = ExcessReturn_4_4 ~ MarketExcessReturn + SMB + MOM, data = Part2Full)
+RegressionFull_4_HPrior <- lm(formula = ExcessReturn_4_HPrior ~ MarketExcessReturn + SMB + MOM, data = Part2Full)
+
+RegressionFull_B_LPrior <- lm(formula = ExcessReturn_B_LPrior ~ MarketExcessReturn + SMB + MOM, data = Part2Full)
+RegressionFull_B_2 <- lm(formula = ExcessReturn_B_2 ~ MarketExcessReturn + SMB + MOM, data = Part2Full)
+RegressionFull_B_3 <- lm(formula = ExcessReturn_B_3 ~ MarketExcessReturn + SMB + MOM, data = Part2Full)
+RegressionFull_B_4 <- lm(formula = ExcessReturn_B_4 ~ MarketExcessReturn + SMB + MOM, data = Part2Full)
+RegressionFull_B_HPrior <- lm(formula = ExcessReturn_B_HPrior ~ MarketExcessReturn + SMB + MOM, data = Part2Full)
 
 
 
@@ -205,13 +254,66 @@ MOM <- 1/2 * (MOMexp_Average_Value_Weighted_Returns_Monthly[1:438,]$'SMALL.HiPRI
 
 ### Data frame for regression
 PreFF <- data.frame("RF" = FFdata_Monthly_Factors$RF[1:438],
-                        "ExcessReturn" = market_return_dep - FFdata_Monthly_Factors$RF[1:438],
-                        "MarketExcessReturn" = market_return_exp - FFdata_Monthly_Factors$RF[1:438],
-                        "SMB" = SMB,
-                        "MOM" = MOM)
+                    "RM" = market_return_exp,
+                    "MarketExcessReturn" = market_return_exp - FFdata_Monthly_Factors$RF[1:438],
+                    "SMB" = SMB,
+                    "MOM" = MOM,
+                    "ExcessReturn_S_LPrior" = MOMdep_Average_Value_Weighted_Returns_Monthly[1:438,2] - FFdata_Monthly_Factors$RF[1:438],
+                    "ExcessReturn_S_2" = MOMdep_Average_Value_Weighted_Returns_Monthly[1:438,3] - FFdata_Monthly_Factors$RF[1:438],
+                    "ExcessReturn_S_3" = MOMdep_Average_Value_Weighted_Returns_Monthly[1:438,4] - FFdata_Monthly_Factors$RF[1:438],
+                    "ExcessReturn_S_4" = MOMdep_Average_Value_Weighted_Returns_Monthly[1:438,5] - FFdata_Monthly_Factors$RF[1:438],
+                    "ExcessReturn_S_HPrior" = MOMdep_Average_Value_Weighted_Returns_Monthly[1:438,6] - FFdata_Monthly_Factors$RF[1:438],
+                    "ExcessReturn_2_LPrior" = MOMdep_Average_Value_Weighted_Returns_Monthly[1:438,7] - FFdata_Monthly_Factors$RF[1:438],
+                    "ExcessReturn_2_2" = MOMdep_Average_Value_Weighted_Returns_Monthly[1:438,8] - FFdata_Monthly_Factors$RF[1:438],
+                    "ExcessReturn_2_3" = MOMdep_Average_Value_Weighted_Returns_Monthly[1:438,9] - FFdata_Monthly_Factors$RF[1:438],
+                    "ExcessReturn_2_4" = MOMdep_Average_Value_Weighted_Returns_Monthly[1:438,10] - FFdata_Monthly_Factors$RF[1:438],
+                    "ExcessReturn_2_HPrior" = MOMdep_Average_Value_Weighted_Returns_Monthly[1:438,11] - FFdata_Monthly_Factors$RF[1:438],
+                    "ExcessReturn_3_LPrior" = MOMdep_Average_Value_Weighted_Returns_Monthly[1:438,12] - FFdata_Monthly_Factors$RF[1:438],
+                    "ExcessReturn_3_2" = MOMdep_Average_Value_Weighted_Returns_Monthly[1:438,13] - FFdata_Monthly_Factors$RF[1:438],
+                    "ExcessReturn_3_3" = MOMdep_Average_Value_Weighted_Returns_Monthly[1:438,14] - FFdata_Monthly_Factors$RF[1:438],
+                    "ExcessReturn_3_4" = MOMdep_Average_Value_Weighted_Returns_Monthly[1:438,15] - FFdata_Monthly_Factors$RF[1:438],
+                    "ExcessReturn_3_HPrior" = MOMdep_Average_Value_Weighted_Returns_Monthly[1:438,16] - FFdata_Monthly_Factors$RF[1:438],
+                    "ExcessReturn_4_LPrior" = MOMdep_Average_Value_Weighted_Returns_Monthly[1:438,17] - FFdata_Monthly_Factors$RF[1:438],
+                    "ExcessReturn_4_2" = MOMdep_Average_Value_Weighted_Returns_Monthly[1:438,18] - FFdata_Monthly_Factors$RF[1:438],
+                    "ExcessReturn_4_3" = MOMdep_Average_Value_Weighted_Returns_Monthly[1:438,19] - FFdata_Monthly_Factors$RF[1:438],
+                    "ExcessReturn_4_4" = MOMdep_Average_Value_Weighted_Returns_Monthly[1:438,20] - FFdata_Monthly_Factors$RF[1:438],
+                    "ExcessReturn_4_HPrior" = MOMdep_Average_Value_Weighted_Returns_Monthly[1:438,21] - FFdata_Monthly_Factors$RF[1:438],
+                    "ExcessReturn_B_LPrior" = MOMdep_Average_Value_Weighted_Returns_Monthly[1:438,22] - FFdata_Monthly_Factors$RF[1:438],
+                    "ExcessReturn_B_2" = MOMdep_Average_Value_Weighted_Returns_Monthly[1:438,23] - FFdata_Monthly_Factors$RF[1:438],
+                    "ExcessReturn_B_3" = MOMdep_Average_Value_Weighted_Returns_Monthly[1:438,24] - FFdata_Monthly_Factors$RF[1:438],
+                    "ExcessReturn_B_4" = MOMdep_Average_Value_Weighted_Returns_Monthly[1:438,25] - FFdata_Monthly_Factors$RF[1:438],
+                    "ExcessReturn_B_HPrior" = MOMdep_Average_Value_Weighted_Returns_Monthly[1:438,26] - FFdata_Monthly_Factors$RF[1:438])
 
 
-Regression_PreFF <- lm(formula = ExcessReturn ~ MarketExcessReturn + SMB + MOM, data = PreFF)
+RegressionPreFF_S_LPrior <- lm(formula = ExcessReturn_S_LPrior ~ MarketExcessReturn + SMB + MOM, data = PreFF)
+RegressionPreFF_S_2 <- lm(formula = ExcessReturn_S_2 ~ MarketExcessReturn + SMB + MOM, data = PreFF)
+RegressionPreFF_S_3 <- lm(formula = ExcessReturn_S_3 ~ MarketExcessReturn + SMB + MOM, data = PreFF)
+RegressionPreFF_S_4 <- lm(formula = ExcessReturn_S_4 ~ MarketExcessReturn + SMB + MOM, data = PreFF)
+RegressionPreFF_S_HPrior <- lm(formula = ExcessReturn_S_HPrior ~ MarketExcessReturn + SMB + MOM, data = PreFF)
+
+RegressionPreFF_2_LPrior <- lm(formula = ExcessReturn_2_LPrior ~ MarketExcessReturn + SMB + MOM, data = PreFF)
+RegressionPreFF_2_2 <- lm(formula = ExcessReturn_2_2 ~ MarketExcessReturn + SMB + MOM, data = PreFF)
+RegressionPreFF_2_3 <- lm(formula = ExcessReturn_2_3 ~ MarketExcessReturn + SMB + MOM, data = PreFF)
+RegressionPreFF_2_4 <- lm(formula = ExcessReturn_2_4 ~ MarketExcessReturn + SMB + MOM, data = PreFF)
+RegressionPreFF_2_HPrior <- lm(formula = ExcessReturn_2_HPrior ~ MarketExcessReturn + SMB + MOM, data = PreFF)
+
+RegressionPreFF_3_LPrior <- lm(formula = ExcessReturn_3_LPrior ~ MarketExcessReturn + SMB + MOM, data = PreFF)
+RegressionPreFF_3_2 <- lm(formula = ExcessReturn_3_2 ~ MarketExcessReturn + SMB + MOM, data = PreFF)
+RegressionPreFF_3_3 <- lm(formula = ExcessReturn_3_3 ~ MarketExcessReturn + SMB + MOM, data = PreFF)
+RegressionPreFF_3_4 <- lm(formula = ExcessReturn_3_4 ~ MarketExcessReturn + SMB + MOM, data = PreFF)
+RegressionPreFF_3_HPrior <- lm(formula = ExcessReturn_3_HPrior ~ MarketExcessReturn + SMB + MOM, data = PreFF)
+
+RegressionPreFF_4_LPrior <- lm(formula = ExcessReturn_4_LPrior ~ MarketExcessReturn + SMB + MOM, data = PreFF)
+RegressionPreFF_4_2 <- lm(formula = ExcessReturn_4_2 ~ MarketExcessReturn + SMB + MOM, data = PreFF)
+RegressionPreFF_4_3 <- lm(formula = ExcessReturn_4_3 ~ MarketExcessReturn + SMB + MOM, data = PreFF)
+RegressionPreFF_4_4 <- lm(formula = ExcessReturn_4_4 ~ MarketExcessReturn + SMB + MOM, data = PreFF)
+RegressionPreFF_4_HPrior <- lm(formula = ExcessReturn_4_HPrior ~ MarketExcessReturn + SMB + MOM, data = PreFF)
+
+RegressionPreFF_B_LPrior <- lm(formula = ExcessReturn_B_LPrior ~ MarketExcessReturn + SMB + MOM, data = PreFF)
+RegressionPreFF_B_2 <- lm(formula = ExcessReturn_B_2 ~ MarketExcessReturn + SMB + MOM, data = PreFF)
+RegressionPreFF_B_3 <- lm(formula = ExcessReturn_B_3 ~ MarketExcessReturn + SMB + MOM, data = PreFF)
+RegressionPreFF_B_4 <- lm(formula = ExcessReturn_B_4 ~ MarketExcessReturn + SMB + MOM, data = PreFF)
+RegressionPreFF_B_HPrior <- lm(formula = ExcessReturn_B_HPrior ~ MarketExcessReturn + SMB + MOM, data = PreFF)
 
 
 
@@ -277,15 +379,66 @@ MOM <- 1/2 * (MOMexp_Average_Value_Weighted_Returns_Monthly[439:780,]$'SMALL.HiP
 
 ### Data frame for regression
 DuringFF <- data.frame("RF" = FFdata_Monthly_Factors$RF[439:780],
-                    "ExcessReturn" = market_return_dep - FFdata_Monthly_Factors$RF[439:780],
-                    "MarketExcessReturn" = market_return_exp - FFdata_Monthly_Factors$RF[439:780],
-                    "SMB" = SMB,
-                    "MOM" = MOM)
+                       "RM" = market_return_exp,
+                       "MarketExcessReturn" = market_return_exp - FFdata_Monthly_Factors$RF[439:780],
+                       "SMB" = SMB,
+                       "MOM" = MOM,
+                       "ExcessReturn_S_LPrior" = MOMdep_Average_Value_Weighted_Returns_Monthly[439:780,2] - FFdata_Monthly_Factors$RF[439:780],
+                       "ExcessReturn_S_2" = MOMdep_Average_Value_Weighted_Returns_Monthly[439:780,3] - FFdata_Monthly_Factors$RF[439:780],
+                       "ExcessReturn_S_3" = MOMdep_Average_Value_Weighted_Returns_Monthly[439:780,4] - FFdata_Monthly_Factors$RF[439:780],
+                       "ExcessReturn_S_4" = MOMdep_Average_Value_Weighted_Returns_Monthly[439:780,5] - FFdata_Monthly_Factors$RF[439:780],
+                       "ExcessReturn_S_HPrior" = MOMdep_Average_Value_Weighted_Returns_Monthly[439:780,6] - FFdata_Monthly_Factors$RF[439:780],
+                       "ExcessReturn_2_LPrior" = MOMdep_Average_Value_Weighted_Returns_Monthly[439:780,7] - FFdata_Monthly_Factors$RF[439:780],
+                       "ExcessReturn_2_2" = MOMdep_Average_Value_Weighted_Returns_Monthly[439:780,8] - FFdata_Monthly_Factors$RF[439:780],
+                       "ExcessReturn_2_3" = MOMdep_Average_Value_Weighted_Returns_Monthly[439:780,9] - FFdata_Monthly_Factors$RF[439:780],
+                       "ExcessReturn_2_4" = MOMdep_Average_Value_Weighted_Returns_Monthly[439:780,10] - FFdata_Monthly_Factors$RF[439:780],
+                       "ExcessReturn_2_HPrior" = MOMdep_Average_Value_Weighted_Returns_Monthly[439:780,11] - FFdata_Monthly_Factors$RF[439:780],
+                       "ExcessReturn_3_LPrior" = MOMdep_Average_Value_Weighted_Returns_Monthly[439:780,12] - FFdata_Monthly_Factors$RF[439:780],
+                       "ExcessReturn_3_2" = MOMdep_Average_Value_Weighted_Returns_Monthly[439:780,13] - FFdata_Monthly_Factors$RF[439:780],
+                       "ExcessReturn_3_3" = MOMdep_Average_Value_Weighted_Returns_Monthly[439:780,14] - FFdata_Monthly_Factors$RF[439:780],
+                       "ExcessReturn_3_4" = MOMdep_Average_Value_Weighted_Returns_Monthly[439:780,15] - FFdata_Monthly_Factors$RF[439:780],
+                       "ExcessReturn_3_HPrior" = MOMdep_Average_Value_Weighted_Returns_Monthly[439:780,16] - FFdata_Monthly_Factors$RF[439:780],
+                       "ExcessReturn_4_LPrior" = MOMdep_Average_Value_Weighted_Returns_Monthly[439:780,17] - FFdata_Monthly_Factors$RF[439:780],
+                       "ExcessReturn_4_2" = MOMdep_Average_Value_Weighted_Returns_Monthly[439:780,18] - FFdata_Monthly_Factors$RF[439:780],
+                       "ExcessReturn_4_3" = MOMdep_Average_Value_Weighted_Returns_Monthly[439:780,19] - FFdata_Monthly_Factors$RF[439:780],
+                       "ExcessReturn_4_4" = MOMdep_Average_Value_Weighted_Returns_Monthly[439:780,20] - FFdata_Monthly_Factors$RF[439:780],
+                       "ExcessReturn_4_HPrior" = MOMdep_Average_Value_Weighted_Returns_Monthly[439:780,21] - FFdata_Monthly_Factors$RF[439:780],
+                       "ExcessReturn_B_LPrior" = MOMdep_Average_Value_Weighted_Returns_Monthly[439:780,22] - FFdata_Monthly_Factors$RF[439:780],
+                       "ExcessReturn_B_2" = MOMdep_Average_Value_Weighted_Returns_Monthly[439:780,23] - FFdata_Monthly_Factors$RF[439:780],
+                       "ExcessReturn_B_3" = MOMdep_Average_Value_Weighted_Returns_Monthly[439:780,24] - FFdata_Monthly_Factors$RF[439:780],
+                       "ExcessReturn_B_4" = MOMdep_Average_Value_Weighted_Returns_Monthly[439:780,25] - FFdata_Monthly_Factors$RF[439:780],
+                       "ExcessReturn_B_HPrior" = MOMdep_Average_Value_Weighted_Returns_Monthly[439:780,26] - FFdata_Monthly_Factors$RF[439:780])
 
 
-Regression_DuringFF <- lm(formula = ExcessReturn ~ MarketExcessReturn + SMB + MOM, data = DuringFF)
+RegressionDuringFF_S_LPrior <- lm(formula = ExcessReturn_S_LPrior ~ MarketExcessReturn + SMB + MOM, data = DuringFF)
+RegressionDuringFF_S_2 <- lm(formula = ExcessReturn_S_2 ~ MarketExcessReturn + SMB + MOM, data = DuringFF)
+RegressionDuringFF_S_3 <- lm(formula = ExcessReturn_S_3 ~ MarketExcessReturn + SMB + MOM, data = DuringFF)
+RegressionDuringFF_S_4 <- lm(formula = ExcessReturn_S_4 ~ MarketExcessReturn + SMB + MOM, data = DuringFF)
+RegressionDuringFF_S_HPrior <- lm(formula = ExcessReturn_S_HPrior ~ MarketExcessReturn + SMB + MOM, data = DuringFF)
 
+RegressionDuringFF_2_LPrior <- lm(formula = ExcessReturn_2_LPrior ~ MarketExcessReturn + SMB + MOM, data = DuringFF)
+RegressionDuringFF_2_2 <- lm(formula = ExcessReturn_2_2 ~ MarketExcessReturn + SMB + MOM, data = DuringFF)
+RegressionDuringFF_2_3 <- lm(formula = ExcessReturn_2_3 ~ MarketExcessReturn + SMB + MOM, data = DuringFF)
+RegressionDuringFF_2_4 <- lm(formula = ExcessReturn_2_4 ~ MarketExcessReturn + SMB + MOM, data = DuringFF)
+RegressionDuringFF_2_HPrior <- lm(formula = ExcessReturn_2_HPrior ~ MarketExcessReturn + SMB + MOM, data = DuringFF)
 
+RegressionDuringFF_3_LPrior <- lm(formula = ExcessReturn_3_LPrior ~ MarketExcessReturn + SMB + MOM, data = DuringFF)
+RegressionDuringFF_3_2 <- lm(formula = ExcessReturn_3_2 ~ MarketExcessReturn + SMB + MOM, data = DuringFF)
+RegressionDuringFF_3_3 <- lm(formula = ExcessReturn_3_3 ~ MarketExcessReturn + SMB + MOM, data = DuringFF)
+RegressionDuringFF_3_4 <- lm(formula = ExcessReturn_3_4 ~ MarketExcessReturn + SMB + MOM, data = DuringFF)
+RegressionDuringFF_3_HPrior <- lm(formula = ExcessReturn_3_HPrior ~ MarketExcessReturn + SMB + MOM, data = DuringFF)
+
+RegressionDuringFF_4_LPrior <- lm(formula = ExcessReturn_4_LPrior ~ MarketExcessReturn + SMB + MOM, data = DuringFF)
+RegressionDuringFF_4_2 <- lm(formula = ExcessReturn_4_2 ~ MarketExcessReturn + SMB + MOM, data = DuringFF)
+RegressionDuringFF_4_3 <- lm(formula = ExcessReturn_4_3 ~ MarketExcessReturn + SMB + MOM, data = DuringFF)
+RegressionDuringFF_4_4 <- lm(formula = ExcessReturn_4_4 ~ MarketExcessReturn + SMB + MOM, data = DuringFF)
+RegressionDuringFF_4_HPrior <- lm(formula = ExcessReturn_4_HPrior ~ MarketExcessReturn + SMB + MOM, data = DuringFF)
+
+RegressionDuringFF_B_LPrior <- lm(formula = ExcessReturn_B_LPrior ~ MarketExcessReturn + SMB + MOM, data = DuringFF)
+RegressionDuringFF_B_2 <- lm(formula = ExcessReturn_B_2 ~ MarketExcessReturn + SMB + MOM, data = DuringFF)
+RegressionDuringFF_B_3 <- lm(formula = ExcessReturn_B_3 ~ MarketExcessReturn + SMB + MOM, data = DuringFF)
+RegressionDuringFF_B_4 <- lm(formula = ExcessReturn_B_4 ~ MarketExcessReturn + SMB + MOM, data = DuringFF)
+RegressionDuringFF_B_HPrior <- lm(formula = ExcessReturn_B_HPrior ~ MarketExcessReturn + SMB + MOM, data = DuringFF)
 
 
 
@@ -345,15 +498,69 @@ MOM <- 1/2 * (MOMexp_Average_Value_Weighted_Returns_Monthly[781:1164,]$'SMALL.Hi
 
 
 
+
 ### Data frame for regression
 PostFF <- data.frame("RF" = FFdata_Monthly_Factors$RF[781:1164],
-                       "ExcessReturn" = market_return_dep - FFdata_Monthly_Factors$RF[781:1164],
-                       "MarketExcessReturn" = market_return_exp - FFdata_Monthly_Factors$RF[781:1164],
-                       "SMB" = SMB,
-                       "MOM" = MOM)
+                     "RM" = market_return_exp,
+                     "MarketExcessReturn" = market_return_exp - FFdata_Monthly_Factors$RF[781:1164],
+                     "SMB" = SMB,
+                     "MOM" = MOM,
+                     "ExcessReturn_S_LPrior" = MOMdep_Average_Value_Weighted_Returns_Monthly[781:1164,2] - FFdata_Monthly_Factors$RF[781:1164],
+                     "ExcessReturn_S_2" = MOMdep_Average_Value_Weighted_Returns_Monthly[781:1164,3] - FFdata_Monthly_Factors$RF[781:1164],
+                     "ExcessReturn_S_3" = MOMdep_Average_Value_Weighted_Returns_Monthly[781:1164,4] - FFdata_Monthly_Factors$RF[781:1164],
+                     "ExcessReturn_S_4" = MOMdep_Average_Value_Weighted_Returns_Monthly[781:1164,5] - FFdata_Monthly_Factors$RF[781:1164],
+                     "ExcessReturn_S_HPrior" = MOMdep_Average_Value_Weighted_Returns_Monthly[781:1164,6] - FFdata_Monthly_Factors$RF[781:1164],
+                     "ExcessReturn_2_LPrior" = MOMdep_Average_Value_Weighted_Returns_Monthly[781:1164,7] - FFdata_Monthly_Factors$RF[781:1164],
+                     "ExcessReturn_2_2" = MOMdep_Average_Value_Weighted_Returns_Monthly[781:1164,8] - FFdata_Monthly_Factors$RF[781:1164],
+                     "ExcessReturn_2_3" = MOMdep_Average_Value_Weighted_Returns_Monthly[781:1164,9] - FFdata_Monthly_Factors$RF[781:1164],
+                     "ExcessReturn_2_4" = MOMdep_Average_Value_Weighted_Returns_Monthly[781:1164,10] - FFdata_Monthly_Factors$RF[781:1164],
+                     "ExcessReturn_2_HPrior" = MOMdep_Average_Value_Weighted_Returns_Monthly[781:1164,11] - FFdata_Monthly_Factors$RF[781:1164],
+                     "ExcessReturn_3_LPrior" = MOMdep_Average_Value_Weighted_Returns_Monthly[781:1164,12] - FFdata_Monthly_Factors$RF[781:1164],
+                     "ExcessReturn_3_2" = MOMdep_Average_Value_Weighted_Returns_Monthly[781:1164,13] - FFdata_Monthly_Factors$RF[781:1164],
+                     "ExcessReturn_3_3" = MOMdep_Average_Value_Weighted_Returns_Monthly[781:1164,14] - FFdata_Monthly_Factors$RF[781:1164],
+                     "ExcessReturn_3_4" = MOMdep_Average_Value_Weighted_Returns_Monthly[781:1164,15] - FFdata_Monthly_Factors$RF[781:1164],
+                     "ExcessReturn_3_HPrior" = MOMdep_Average_Value_Weighted_Returns_Monthly[781:1164,16] - FFdata_Monthly_Factors$RF[781:1164],
+                     "ExcessReturn_4_LPrior" = MOMdep_Average_Value_Weighted_Returns_Monthly[781:1164,17] - FFdata_Monthly_Factors$RF[781:1164],
+                     "ExcessReturn_4_2" = MOMdep_Average_Value_Weighted_Returns_Monthly[781:1164,18] - FFdata_Monthly_Factors$RF[781:1164],
+                     "ExcessReturn_4_3" = MOMdep_Average_Value_Weighted_Returns_Monthly[781:1164,19] - FFdata_Monthly_Factors$RF[781:1164],
+                     "ExcessReturn_4_4" = MOMdep_Average_Value_Weighted_Returns_Monthly[781:1164,20] - FFdata_Monthly_Factors$RF[781:1164],
+                     "ExcessReturn_4_HPrior" = MOMdep_Average_Value_Weighted_Returns_Monthly[781:1164,21] - FFdata_Monthly_Factors$RF[781:1164],
+                     "ExcessReturn_B_LPrior" = MOMdep_Average_Value_Weighted_Returns_Monthly[781:1164,22] - FFdata_Monthly_Factors$RF[781:1164],
+                     "ExcessReturn_B_2" = MOMdep_Average_Value_Weighted_Returns_Monthly[781:1164,23] - FFdata_Monthly_Factors$RF[781:1164],
+                     "ExcessReturn_B_3" = MOMdep_Average_Value_Weighted_Returns_Monthly[781:1164,24] - FFdata_Monthly_Factors$RF[781:1164],
+                     "ExcessReturn_B_4" = MOMdep_Average_Value_Weighted_Returns_Monthly[781:1164,25] - FFdata_Monthly_Factors$RF[781:1164],
+                     "ExcessReturn_B_HPrior" = MOMdep_Average_Value_Weighted_Returns_Monthly[781:1164,26] - FFdata_Monthly_Factors$RF[781:1164])
 
 
-Regression_PostFF <- lm(formula = ExcessReturn ~ MarketExcessReturn + SMB + MOM, data = PostFF)
+RegressionPostFF_S_LPrior <- lm(formula = ExcessReturn_S_LPrior ~ MarketExcessReturn + SMB + MOM, data = PostFF)
+RegressionPostFF_S_2 <- lm(formula = ExcessReturn_S_2 ~ MarketExcessReturn + SMB + MOM, data = PostFF)
+RegressionPostFF_S_3 <- lm(formula = ExcessReturn_S_3 ~ MarketExcessReturn + SMB + MOM, data = PostFF)
+RegressionPostFF_S_4 <- lm(formula = ExcessReturn_S_4 ~ MarketExcessReturn + SMB + MOM, data = PostFF)
+RegressionPostFF_S_HPrior <- lm(formula = ExcessReturn_S_HPrior ~ MarketExcessReturn + SMB + MOM, data = PostFF)
+
+RegressionPostFF_2_LPrior <- lm(formula = ExcessReturn_2_LPrior ~ MarketExcessReturn + SMB + MOM, data = PostFF)
+RegressionPostFF_2_2 <- lm(formula = ExcessReturn_2_2 ~ MarketExcessReturn + SMB + MOM, data = PostFF)
+RegressionPostFF_2_3 <- lm(formula = ExcessReturn_2_3 ~ MarketExcessReturn + SMB + MOM, data = PostFF)
+RegressionPostFF_2_4 <- lm(formula = ExcessReturn_2_4 ~ MarketExcessReturn + SMB + MOM, data = PostFF)
+RegressionPostFF_2_HPrior <- lm(formula = ExcessReturn_2_HPrior ~ MarketExcessReturn + SMB + MOM, data = PostFF)
+
+RegressionPostFF_3_LPrior <- lm(formula = ExcessReturn_3_LPrior ~ MarketExcessReturn + SMB + MOM, data = PostFF)
+RegressionPostFF_3_2 <- lm(formula = ExcessReturn_3_2 ~ MarketExcessReturn + SMB + MOM, data = PostFF)
+RegressionPostFF_3_3 <- lm(formula = ExcessReturn_3_3 ~ MarketExcessReturn + SMB + MOM, data = PostFF)
+RegressionPostFF_3_4 <- lm(formula = ExcessReturn_3_4 ~ MarketExcessReturn + SMB + MOM, data = PostFF)
+RegressionPostFF_3_HPrior <- lm(formula = ExcessReturn_3_HPrior ~ MarketExcessReturn + SMB + MOM, data = PostFF)
+
+RegressionPostFF_4_LPrior <- lm(formula = ExcessReturn_4_LPrior ~ MarketExcessReturn + SMB + MOM, data = PostFF)
+RegressionPostFF_4_2 <- lm(formula = ExcessReturn_4_2 ~ MarketExcessReturn + SMB + MOM, data = PostFF)
+RegressionPostFF_4_3 <- lm(formula = ExcessReturn_4_3 ~ MarketExcessReturn + SMB + MOM, data = PostFF)
+RegressionPostFF_4_4 <- lm(formula = ExcessReturn_4_4 ~ MarketExcessReturn + SMB + MOM, data = PostFF)
+RegressionPostFF_4_HPrior <- lm(formula = ExcessReturn_4_HPrior ~ MarketExcessReturn + SMB + MOM, data = PostFF)
+
+RegressionPostFF_B_LPrior <- lm(formula = ExcessReturn_B_LPrior ~ MarketExcessReturn + SMB + MOM, data = PostFF)
+RegressionPostFF_B_2 <- lm(formula = ExcessReturn_B_2 ~ MarketExcessReturn + SMB + MOM, data = PostFF)
+RegressionPostFF_B_3 <- lm(formula = ExcessReturn_B_3 ~ MarketExcessReturn + SMB + MOM, data = PostFF)
+RegressionPostFF_B_4 <- lm(formula = ExcessReturn_B_4 ~ MarketExcessReturn + SMB + MOM, data = PostFF)
+RegressionPostFF_B_HPrior <- lm(formula = ExcessReturn_B_HPrior ~ MarketExcessReturn + SMB + MOM, data = PostFF)
 
 
 
