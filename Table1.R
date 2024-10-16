@@ -27,8 +27,39 @@ MOMdep_Value_Weighted_Average_of_Prior_Returns_part2 <- MOMdep_Value_Weighted_Av
 
 
 ### Average of annual averages of firm size
-colMeans(MOMdep_Average_Firm_Size_part2[,-1])
+MOMdep_Average_Firm_Size$Date <- as.Date(MOMdep_Average_Firm_Size$Date, format="%Y-%m-%d")
+MOMdep_Average_Firm_Size$Year <- format(MOMdep_Average_Firm_Size$Date, "%Y")
+Firm_Size_Annual <- MOMdep_Average_Firm_Size %>%
+  group_by(Year) %>%
+  summarise(
+    SMALL.LoPRIOR = mean(SMALL.LoPRIOR, na.rm = TRUE),
+    ME1.PRIOR2 = mean(ME1.PRIOR2, na.rm = TRUE),
+    ME1.PRIOR3 = mean(ME1.PRIOR3, na.rm = TRUE),
+    ME1.PRIOR4 = mean(ME1.PRIOR4, na.rm = TRUE),
+    SMALL.HiPRIOR = mean(SMALL.HiPRIOR, na.rm = TRUE),
+    ME2.PRIOR1 = mean(ME2.PRIOR1, na.rm = TRUE),
+    ME2.PRIOR2 = mean(ME2.PRIOR2, na.rm = TRUE),
+    ME2.PRIOR3 = mean(ME2.PRIOR3, na.rm = TRUE),
+    ME2.PRIOR4 = mean(ME2.PRIOR4, na.rm = TRUE),
+    ME2.PRIOR5 = mean(ME2.PRIOR5, na.rm = TRUE),
+    ME3.PRIOR1 = mean(ME3.PRIOR1, na.rm = TRUE),
+    ME3.PRIOR2 = mean(ME3.PRIOR2, na.rm = TRUE),
+    ME3.PRIOR3 = mean(ME3.PRIOR3, na.rm = TRUE),
+    ME3.PRIOR4 = mean(ME3.PRIOR4, na.rm = TRUE),
+    ME3.PRIOR5 = mean(ME3.PRIOR5, na.rm = TRUE),
+    ME4.PRIOR1 = mean(ME4.PRIOR1, na.rm = TRUE),
+    ME4.PRIOR2 = mean(ME4.PRIOR2, na.rm = TRUE),
+    ME4.PRIOR3 = mean(ME4.PRIOR3, na.rm = TRUE),
+    ME4.PRIOR4 = mean(ME4.PRIOR4, na.rm = TRUE),
+    ME4.PRIOR5 = mean(ME4.PRIOR5, na.rm = TRUE),
+    BIG.LoPRIOR = mean(BIG.LoPRIOR, na.rm = TRUE),
+    ME5.PRIOR2 = mean(ME5.PRIOR2, na.rm = TRUE),
+    ME5.PRIOR3 = mean(ME5.PRIOR3, na.rm = TRUE),
+    ME5.PRIOR4 = mean(ME5.PRIOR4, na.rm = TRUE),
+    BIG.HiPRIOR = mean(BIG.HiPRIOR, na.rm = TRUE)
+  )
 
+colMeans(Firm_Size_Annual[,-1])
 
 ### Average of annual $BE/ME$ ratios for portfolio
 
@@ -36,6 +67,7 @@ colMeans(MOMdep_Average_Firm_Size_part2[,-1])
 
 
 ### Average of annual percent of market value in portfolio
+
 # remove date
 num_firms <- MOMdep_Number_of_Firms_in_Portfolios_part2[, -1]
 avg_firm_size <- MOMdep_Average_Firm_Size_part2[, -1]
@@ -74,8 +106,41 @@ print(average_percent_by_portfolio)
 
 
 
+
 ### Average of annual number of firms in portfolio
-colMeans(MOMdep_Number_of_Firms_in_Portfolios_part2[,-1])
+MOMdep_Number_of_Firms_in_Portfolios$Date <- as.Date(MOMdep_Number_of_Firms_in_Portfolios$Date, format="%Y-%m-%d")
+MOMdep_Number_of_Firms_in_Portfolios$Year <- format(MOMdep_Number_of_Firms_in_Portfolios$Date, "%Y")
+Number_of_Firms_in_Portfolios_Annual <- MOMdep_Number_of_Firms_in_Portfolios %>%
+  group_by(Year) %>%
+  summarise(
+    SMALL.LoPRIOR = mean(SMALL.LoPRIOR, na.rm = TRUE),
+    ME1.PRIOR2 = mean(ME1.PRIOR2, na.rm = TRUE),
+    ME1.PRIOR3 = mean(ME1.PRIOR3, na.rm = TRUE),
+    ME1.PRIOR4 = mean(ME1.PRIOR4, na.rm = TRUE),
+    SMALL.HiPRIOR = mean(SMALL.HiPRIOR, na.rm = TRUE),
+    ME2.PRIOR1 = mean(ME2.PRIOR1, na.rm = TRUE),
+    ME2.PRIOR2 = mean(ME2.PRIOR2, na.rm = TRUE),
+    ME2.PRIOR3 = mean(ME2.PRIOR3, na.rm = TRUE),
+    ME2.PRIOR4 = mean(ME2.PRIOR4, na.rm = TRUE),
+    ME2.PRIOR5 = mean(ME2.PRIOR5, na.rm = TRUE),
+    ME3.PRIOR1 = mean(ME3.PRIOR1, na.rm = TRUE),
+    ME3.PRIOR2 = mean(ME3.PRIOR2, na.rm = TRUE),
+    ME3.PRIOR3 = mean(ME3.PRIOR3, na.rm = TRUE),
+    ME3.PRIOR4 = mean(ME3.PRIOR4, na.rm = TRUE),
+    ME3.PRIOR5 = mean(ME3.PRIOR5, na.rm = TRUE),
+    ME4.PRIOR1 = mean(ME4.PRIOR1, na.rm = TRUE),
+    ME4.PRIOR2 = mean(ME4.PRIOR2, na.rm = TRUE),
+    ME4.PRIOR3 = mean(ME4.PRIOR3, na.rm = TRUE),
+    ME4.PRIOR4 = mean(ME4.PRIOR4, na.rm = TRUE),
+    ME4.PRIOR5 = mean(ME4.PRIOR5, na.rm = TRUE),
+    BIG.LoPRIOR = mean(BIG.LoPRIOR, na.rm = TRUE),
+    ME5.PRIOR2 = mean(ME5.PRIOR2, na.rm = TRUE),
+    ME5.PRIOR3 = mean(ME5.PRIOR3, na.rm = TRUE),
+    ME5.PRIOR4 = mean(ME5.PRIOR4, na.rm = TRUE),
+    BIG.HiPRIOR = mean(BIG.HiPRIOR, na.rm = TRUE)
+  )
+
+colMeans(Number_of_Firms_in_Portfolios_Annual[,-1])
 
 
 ### Average of annual $E/P$ ratios (in percent) for portfolio
