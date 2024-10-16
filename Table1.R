@@ -36,6 +36,41 @@ colMeans(MOMdep_Average_Firm_Size_part2[,-1])
 
 
 ### Average of annual percent of market value in portfolio
+# remove date
+num_firms <- MOMdep_Number_of_Firms_in_Portfolios_part2[, -1]
+avg_firm_size <- MOMdep_Average_Firm_Size_part2[, -1]
+avg_value_weighted_returns <- MOMdep_Average_Value_Weighted_Returns_Monthly_part2[, -1]
+
+# calculate pf weights
+portfolio_weights <- num_firms * avg_firm_size
+
+# calculate total market value for each portfolio
+total_market_value <- rowSums(portfolio_weights)
+
+# create a data frame with dates and total market values
+market_value_df <- data.frame(Date = MOMdep_Average_Value_Weighted_Returns_Monthly_part2[, 1],
+                              Total_Market_Value = total_market_value)
+
+# correct formatting
+market_value_df$Date <- as.Date(market_value_df$Date)
+
+# Find year
+market_value_df$Year <- year(market_value_df$Date)
+
+# Combine the data to calculate annual market values for each portfolio
+annual_market_values <- data.frame(Year = market_value_df$Year)
+
+# loop to calculate annual percent of market value
+for (i in 1:ncol(num_firms)) {
+  annual_market_values[paste("PF", i, sep = "_")] <- 
+    (num_firms[, i] * avg_firm_size[, i]) / total_market_value
+}
+
+# average percent of market value across years for each i=25 pf's
+average_percent_by_portfolio <- annual_market_values %>%
+  summarise(across(starts_with("PF"), ~ mean(.x, na.rm = TRUE)))
+average_percent_by_portfolio <- average_percent_by_portfolio*100
+print(average_percent_by_portfolio)
 
 
 
