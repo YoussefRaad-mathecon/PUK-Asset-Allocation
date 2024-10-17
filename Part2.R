@@ -204,9 +204,9 @@ RegressionFull_B_HPrior <- lm(formula = ExcessReturn_B_HPrior ~ MarketExcessRetu
 
 ### MOMexp
 # Remove the first column (assumed to be character) and keep only numeric columns
-num_firms <- MOMexp_Number_of_Firms_in_Portfolios[1:438, -1]
-avg_firm_size <- MOMexp_Average_Firm_Size[1:438, -1]
-avg_value_weighted_returns <- MOMexp_Average_Value_Weighted_Returns_Monthly[1:438, -1]
+num_firms <- MOMexp_Number_of_Firms_in_Portfolios_part2[1:438, -1]
+avg_firm_size <- MOMexp_Average_Firm_Size_part2[1:438, -1]
+avg_value_weighted_returns <- MOMexp_Average_Value_Weighted_Returns_Monthly_part2[1:438, -1]
 
 # Calculate the portfolio weights for all portfolios in one step
 portfolio_weights <- num_firms * avg_firm_size
@@ -221,9 +221,9 @@ market_return_exp <- rowSums(avg_value_weighted_returns * portfolio_weights) / t
 
 ### MOMdep
 # Remove the first column (assumed to be character) and keep only numeric columns
-num_firms <- MOMdep_Number_of_Firms_in_Portfolios[1:438, -1]
-avg_firm_size <- MOMdep_Average_Firm_Size[1:438, -1]
-avg_value_weighted_returns <- MOMdep_Average_Value_Weighted_Returns_Monthly[1:438, -1]
+num_firms <- MOMdep_Number_of_Firms_in_Portfolios_part2[1:438, -1]
+avg_firm_size <- MOMdep_Average_Firm_Size_part2[1:438, -1]
+avg_value_weighted_returns <- MOMdep_Average_Value_Weighted_Returns_Monthly_part2[1:438, -1]
 
 # Calculate the portfolio weights for all portfolios in one step
 portfolio_weights <- num_firms * avg_firm_size
@@ -329,9 +329,9 @@ RegressionPreFF_B_HPrior <- lm(formula = ExcessReturn_B_HPrior ~ MarketExcessRet
 
 ### MOMexp
 # Remove the first column (assumed to be character) and keep only numeric columns
-num_firms <- MOMexp_Number_of_Firms_in_Portfolios[439:780, -1]
-avg_firm_size <- MOMexp_Average_Firm_Size[439:780, -1]
-avg_value_weighted_returns <- MOMexp_Average_Value_Weighted_Returns_Monthly[439:780, -1]
+num_firms <- MOMexp_Number_of_Firms_in_Portfolios_part2[439:780, -1]
+avg_firm_size <- MOMexp_Average_Firm_Size_part2[439:780, -1]
+avg_value_weighted_returns <- MOMexp_Average_Value_Weighted_Returns_Monthly_part2[439:780, -1]
 
 # Calculate the portfolio weights for all portfolios in one step
 portfolio_weights <- num_firms * avg_firm_size
@@ -346,9 +346,9 @@ market_return_exp <- rowSums(avg_value_weighted_returns * portfolio_weights) / t
 
 ### MOMdep
 # Remove the first column (assumed to be character) and keep only numeric columns
-num_firms <- MOMdep_Number_of_Firms_in_Portfolios[439:780, -1]
-avg_firm_size <- MOMdep_Average_Firm_Size[439:780, -1]
-avg_value_weighted_returns <- MOMdep_Average_Value_Weighted_Returns_Monthly[439:780, -1]
+num_firms <- MOMdep_Number_of_Firms_in_Portfolios_part2[439:780, -1]
+avg_firm_size <- MOMdep_Average_Firm_Size_part2[439:780, -1]
+avg_value_weighted_returns <- MOMdep_Average_Value_Weighted_Returns_Monthly_part2[439:780, -1]
 
 # Calculate the portfolio weights for all portfolios in one step
 portfolio_weights <- num_firms * avg_firm_size
@@ -450,9 +450,9 @@ RegressionDuringFF_B_HPrior <- lm(formula = ExcessReturn_B_HPrior ~ MarketExcess
 
 ### MOMexp
 # Remove the first column (assumed to be character) and keep only numeric columns
-num_firms <- MOMexp_Number_of_Firms_in_Portfolios[781:1164, -1]
-avg_firm_size <- MOMexp_Average_Firm_Size[781:1164, -1]
-avg_value_weighted_returns <- MOMexp_Average_Value_Weighted_Returns_Monthly[781:1164, -1]
+num_firms <- MOMexp_Number_of_Firms_in_Portfolios_part2[781:1164, -1]
+avg_firm_size <- MOMexp_Average_Firm_Size_part2[781:1164, -1]
+avg_value_weighted_returns <- MOMexp_Average_Value_Weighted_Returns_Monthly_part2[781:1164, -1]
 
 # Calculate the portfolio weights for all portfolios in one step
 portfolio_weights <- num_firms * avg_firm_size
@@ -467,9 +467,9 @@ market_return_exp <- rowSums(avg_value_weighted_returns * portfolio_weights) / t
 
 ### MOMdep
 # Remove the first column (assumed to be character) and keep only numeric columns
-num_firms <- MOMdep_Number_of_Firms_in_Portfolios[781:1164, -1]
-avg_firm_size <- MOMdep_Average_Firm_Size[781:1164, -1]
-avg_value_weighted_returns <- MOMdep_Average_Value_Weighted_Returns_Monthly[781:1164, -1]
+num_firms <- MOMdep_Number_of_Firms_in_Portfolios_part2[781:1164, -1]
+avg_firm_size <- MOMdep_Average_Firm_Size_part2[781:1164, -1]
+avg_value_weighted_returns <- MOMdep_Average_Value_Weighted_Returns_Monthly_part2[781:1164, -1]
 
 # Calculate the portfolio weights for all portfolios in one step
 portfolio_weights <- num_firms * avg_firm_size
