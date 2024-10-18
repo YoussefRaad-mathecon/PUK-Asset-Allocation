@@ -10,7 +10,7 @@ library(nloptr)
 set.seed(123)
 RF <- FFdata_Monthly_Factors$RF[757:1164] ### RF rate
 RF <- RF / 100
-
+Bonds <- Bonds$Monthly.Return.10.Yr # Bonds
 
 ## Split into subsets of subsets and cut timeline of the CSV file 6_Portfolios_ME_Prior_12_2.CSV
 # Average Value Weighted Returns -- Monthly
@@ -48,7 +48,6 @@ total_weight <- rowSums(portfolio_weights)
 market_return <- rowSums(avg_value_weighted_returns * portfolio_weights) / total_weight
 market_return <- market_return / 100
 
-
 # Calculate portfolio expected return
 w_S <- 0.60  # Weight in stocks
 w_B <- 0.40  # Weight in bonds
@@ -78,77 +77,6 @@ target_return <- 0.0075  # 75 bps
 cat("60/40-portfolio expected return:", E_R_p_6040, "\n") # 0.006790775 < 0.0075 (does not meet target)
 cat("60/40-portfolio volatility :", sigma_p_6040, "\n") #0.02777475 
 
-
-####################################################################################################################
-####################################################################################################################
-#--------------------------------- Efficient Frontier --------------------------------------------------------------
-####################################################################################################################
-####################################################################################################################
-# Number of portfolios to simulate
-n_portfolios <- 10000
-
-# Create sequences of weights for stocks, bonds, and cash
-w_S <- seq(0, 1, length.out = n_portfolios)
-w_B <- seq(0, 1, length.out = n_portfolios)
-w_C <- 1 - w_S - w_B  # Cash weight as the complement
-
-# Initialize vectors to store results
-port_returns <- numeric(n_portfolios)
-port_volatilities <- numeric(n_portfolios)
-
-
-# Loop through different portfolio weights
-for (i in 1:n_portfolios) {
-  # Ensure the weights sum to 1
-  w_S[i] <- max(0, w_S[i])
-  w_B[i] <- max(0, w_B[i])
-  w_C[i] <- 1 - w_S[i] - w_B[i]
-  
-  # Portfolio expected return
-  port_returns[i] <- w_S[i] * E_R_S + w_B[i] * E_R_B + w_C[i] * E_R_C
-  
-  # Portfolio volatility (now includes cash)
-  port_volatilities[i] <- sqrt(w_S[i]^2 * sigma_S^2 + 
-                                 w_B[i]^2 * sigma_B^2 + 
-                                 w_C[i]^2 * sigma_C^2 + 
-                                 2 * w_S[i] * w_B[i] * covariance +
-                                 2 * w_S[i] * w_C[i] * cov(market_return / 100, RF, use = "pairwise.complete.obs") +
-                                 2 * w_B[i] * w_C[i] * cov(Bonds, RF, use = "pairwise.complete.obs"))
-}
-
-# Find the Global Minimum Variance Portfolio (GMV)
-min_variance_idx <- which.min(port_volatilities)
-
-# Extract the return and volatility of the GMV portfolio
-gmv_return <- port_returns[min_variance_idx]
-gmv_volatility <- port_volatilities[min_variance_idx]
-
-# Split portfolios into efficient (above GMV) and inefficient (below GMV)
-efficient_indices <- which(port_returns >= gmv_return)
-inefficient_indices <- which(port_returns < gmv_return)
-
-# Plot the inefficient frontier (below GMV) with a dashed line
-plot(port_volatilities[inefficient_indices], port_returns[inefficient_indices], type = "l", col = "blue", lwd = 2, lty = 2,
-     ylim = c(min(port_returns), max(port_returns)),
-     xlim = c(min(port_volatilities), max(port_volatilities)),
-     xlab = "Portfolio Volatility", ylab = "Portfolio Expected Return",
-     main = "Efficient Frontier with Cash Added")
-
-# Add the efficient frontier (above GMV) with a solid line
-lines(port_volatilities[efficient_indices], port_returns[efficient_indices], col = "blue", lwd = 2)
-
-# Highlight the Global Minimum Variance Portfolio (GMV)
-points(gmv_volatility, gmv_return, col = "green", pch = 16, cex = 1.5)
-text(gmv_volatility, gmv_return, labels = "GMV Portfolio", pos = 4, col = "green")
-
-# Add grid for better visualization
-grid()
-
-# Print the GMV portfolio details
-cat("Global Minimum Variance Portfolio with Cash:\n")
-cat("Expected Return:", gmv_return, "\n")
-cat("Portfolio Volatility:", gmv_volatility, "\n")
-
 ####################################################################################################################
 ####################################################################################################################
 #---------------------------------------- C ------------------------------------------------------------------------
@@ -163,13 +91,12 @@ E_R_B <- mean(Bonds)  # Expected return for bonds
 sigma_C <- sd(RF)   # Volatility of cash
 sigma_S <- sd(market_return) # Volatility of stocks
 sigma_B <- sd(Bonds)  # Volatility of bonds
-
 # Calculate covariances
 cov_S_B <- cov(market_return, Bonds, use = "pairwise.complete.obs")
 cov_S_C <- cov(market_return, RF , use = "pairwise.complete.obs")
 cov_B_C <- cov(Bonds, RF, use = "pairwise.complete.obs")
 
-# Define covariance matrix (3x3)
+# Define covariance matrix 
 cov_matrix <- matrix(c(sigma_S^2, cov_S_B, cov_S_C,
                        cov_S_B, sigma_B^2, cov_B_C,
                        cov_S_C, cov_B_C, sigma_C^2), nrow = 3)
@@ -182,11 +109,6 @@ target_return <- 0.0075
 
 # Define the number of assets
 n_assets <- 3
-
-# Covariance matrix 
-cov_matrix <- matrix(c(sigma_S^2, cov_S_B, cov_S_C,
-                       cov_S_B, sigma_B^2, cov_B_C,
-                       cov_S_C, cov_B_C, sigma_C^2), nrow = 3)
 
 # Expected returns vector 
 expected_returns <- c(E_R_S, E_R_B, E_R_C)
@@ -219,6 +141,7 @@ cat("MVO bonds weight: ", optimal_weights_MVO[2], "\n") # 0.2872797
 cat("MVO cash weight: ", optimal_weights_MVO[3], "\n") # 0
 cat("MVO portfolio volatility: ", portfolio_volatility_MVO, "\n") # 0.03159363 
 cat("MVO expected return: ", portfolio_return_MVO, "\n") # 0.0075 by construction
+
 ####################################################################################################################
 ####################################################################################################################
 #---------------------------------------- D ------------------------------------------------------------------------
@@ -241,7 +164,7 @@ cov_B_C <- cov(Bonds, RF, use = "pairwise.complete.obs")
 cov_matrix <- matrix(c(sigma_S^2, cov_S_B, cov_S_C,
                        cov_S_B, sigma_B^2, cov_B_C,
                        cov_S_C, cov_B_C, sigma_C^2), nrow = 3)
-
+print(cov_matrix)
 # Define the expected returns vector for stocks, bonds, and cash
 expected_returns <- c(E_R_S, E_R_B, E_R_C)
 
@@ -367,53 +290,6 @@ cat("LRP bonds weight: ", optimal_weights_LRP[2], "\n") # 0.9317936
 cat("LRP cash weight: ", optimal_weights_LRP[3], "\n") # 0.08349038
 cat("LRP portfolio volatility: ", portfolio_volatility_LRP, "\n") # 0.0280509
 cat("LRP expected return: ", portfolio_return_LRP, "\n") # 0.0075 by construction
-
-####################################################################################################################
-####################################################################################################################
-#-------------------------- Efficient Frontier with all portfolios -------------------------------------------------
-####################################################################################################################
-####################################################################################################################
-
-# Plot the inefficient frontier (below GMV) with a dashed line
-plot(port_volatilities[inefficient_indices], port_returns[inefficient_indices], type = "l", col = "blue", lwd = 2, lty = 2,
-     ylim = c(min(port_returns), max(port_returns)),
-     xlim = c(min(port_volatilities), max(port_volatilities)),
-     xlab = "Portfolio Volatility", ylab = "Portfolio Expected Return",
-     main = "Efficient Frontier with Global Minimum Variance Portfolio")
-
-# Add the efficient frontier (above GMV) with a solid line
-lines(port_volatilities[efficient_indices], port_returns[efficient_indices], col = "blue", lwd = 2)
-
-# Highlight the Global Minimum Variance Portfolio (GMV)
-points(gmv_volatility, gmv_return, col = "purple", pch = 8, cex = 1.7)
-text(gmv_volatility, gmv_return, labels = "GMV Portfolio", pos = 4, col = "purple")
-
-# Highlight the 60/40 portfolio
-points(sigma_p, E_R_p, col = "blue", pch = 8, cex = 1.7)
-text(sigma_p, E_R_p, labels = "60/40", pos = 1, col = "blue")
-
-# Highlight the Optimal portfolio with no restriction on leverage
-points(optimal_volatility_leverage, optimal_return_leverage, col = "pink", pch = 8, cex = 1.7)
-text(optimal_volatility_leverage, optimal_return_leverage, labels = "MVO (unrestricted)", pos = 2, col = "pink")
-
-# Highlight the Optimal portfolio
-points(optimal_volatility, optimal_return, col = "red", pch = 8, cex = 1.7)
-text(optimal_volatility, optimal_return, labels = "MVO", pos = 4, col = "red")
-
-# Highlight the Optimal portfolio with fixed leverage of 1.5
-points(optimal_volatility_leverage_fixed, optimal_return_leverage_fixed, col = "green", pch = 8, cex = 1.7)
-text(optimal_volatility_leverage_fixed, optimal_return_leverage_fixed, labels = "MVO+L", pos = 2, col = "green")
-
-# Highlight the Leveraged Risk Parity Portfolio
-points(optimal_portfolio_volatility, optimal_portfolio_return, col = "darkgreen", pch = 8, cex = 1.7)
-text(optimal_portfolio_volatility, optimal_portfolio_return, labels = "LRP", pos = 3, col = "darkgreen")
-
-
-
-# Add grid for better visualization
-grid()
-
-legend("bottomright", legend=c("Efficient portfolios", "Inefficient portfolios"), col=c("blue", "blue"), lty=1:2, lwd=2)
 
 
 ####################################################################################################################
