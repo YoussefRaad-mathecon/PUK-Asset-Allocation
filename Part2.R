@@ -25,7 +25,8 @@ library(mice) ### Single imputation
 
 
 set.seed(123)
-setwd("C:/Users/youss/OneDrive - University of Copenhagen/PUK")
+# setwd("C:/Users/youss/OneDrive - University of Copenhagen/PUK")
+setwd("~/Documents/KU/PUKAssetAllocation/Exam/RCode")
 
 ####################################################################################################################
 ####################################################################################################################
