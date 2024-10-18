@@ -26,7 +26,7 @@ library(mice) ### Single imputation
 
 set.seed(123)
 #setwd("~/Documents/KU/PUKAssetAllocation/Exam/RCode")
-#setwd("C:/Users/youss/OneDrive - University of Copenhagen/PUK")
+setwd("C:/Users/youss/OneDrive - University of Copenhagen/PUK")
 ####################################################################################################################
 ####################################################################################################################
 #------------------------------------------- A ---------------------------------------------------------------------
@@ -141,18 +141,28 @@ cat("Covariance matrix: ", cov_matrix, "\n")
 #----------------------------------------- B + C -------------------------------------------------------------------
 ####################################################################################################################
 ####################################################################################################################
+# Define hurdle rate and fixed fee
+hurdle_rate <- 0.01  # 100 bps
+fixed_fee <- 0.0015  # 15 bps 
 
+# Calculate the excess return over the hurdle for each period
+MarketReturn <- MarketReturn %>%
+  mutate(
+    Excess_Return = MarketAssumptions - hurdle_rate,
+    Performance_Fee = pmax(Excess_Return, 0) * 0.1,  # 10% of the positive part of excess return
+    Total_Fee = fixed_fee + Performance_Fee  # Total fee for each period
+  )
 
+# Adjust returns by subtracting the fees
+MarketReturn <- MarketReturn %>%
+  mutate(
+    Net_Portfolio_Return = MarketAssumptions - Total_Fee
+  )
 
+# Recalculate the expected return and volatility with the adjusted returns
+E_R_S_net <- mean(MarketReturn$Net_Portfolio_Return)  # Expected return of stocks after fees
+sigma_S_net <- sd(MarketReturn$Net_Portfolio_Return)  # Volatility of stocks after fees
 
-
-
-
-
-
-
-
-
-
-
-
+# Print the updated results
+cat("Expected return of stocks (with overlay and fees): ", E_R_S_net, "\n")
+cat("Volatility of stocks (with overlay and fees): ", sigma_S_net, "\n")
