@@ -5,7 +5,8 @@
 ####################################################################################################################
 library(quadprog)
 library(nloptr)
-
+library(ROI)
+library(ROI.plugin.quadprog)
 ### Data
 set.seed(123)
 RF <- FFdata_Monthly_Factors$RF[757:876] ### RF rate
@@ -73,10 +74,14 @@ sigma_p_6040 <- sqrt(w_S^2 * sigma_S^2 + w_B^2 * sigma_B^2 + 2 * w_S * w_B * cov
 # Check if portfolio meets return target
 target_return <- 0.0075  # 75 bps
 
+# Calculate Sharpe ratio
+Sharpe_ratio <- (E_R_p_6040 - E_R_C) / sigma_p_6040
 
 # Print results
 cat("60/40-portfolio expected return:", E_R_p_6040, "\n") # 0.01025922
 cat("60/40-portfolio volatility :", sigma_p_6040, "\n") # 0.02705023
+cat("Sharpe Ratio of the 60/40 portfolio:", Sharpe_ratio, "\n")
+
 
 ####################################################################################################################
 ####################################################################################################################
@@ -139,14 +144,20 @@ result_MVO <- solve.QP(Dmat, dvec, Amat, bvec, meq = 2)
 
 # Get the optimal weights
 optimal_weights_MVO <- result_MVO$solution
-portfolio_return_MVO <- sum(optimal_weights_MVO * expected_returns)
-portfolio_volatility_MVO <- sqrt(t(optimal_weights_MVO) %*% cov_matrix %*% optimal_weights_MVO)
+E_R_p_MVO <- sum(optimal_weights_MVO * expected_returns)
+sigma_p_MVO <- sqrt(t(optimal_weights_MVO) %*% cov_matrix %*% optimal_weights_MVO)
+
+# Calculate Sharpe ratio
+Sharpe_ratio_MVO <- (E_R_p_MVO - E_R_C) / sigma_p_MVO
+
+
 # Print the results
 cat("MVO stocks weight: ", optimal_weights_MVO[1], "\n") # 0.3312331 
 cat("MVO bonds weight: ", optimal_weights_MVO[2], "\n") # 0
 cat("MVO cash weight: ", optimal_weights_MVO[3], "\n") # 0.6687669
-cat("MVO portfolio volatility: ", portfolio_volatility_MVO, "\n") # 0.01306414
-cat("MVO expected return: ", portfolio_return_MVO, "\n") # 0.0075 by construction
+cat("MVO portfolio volatility: ", sigma_p_MVO, "\n") # 0.01306414
+cat("MVO expected return: ", E_R_p_MVO, "\n") # 0.0075 by construction
+cat("MVO Sharpe ratio: ", Sharpe_ratio_MVO, "\n") # 0.2667608
 
 ####################################################################################################################
 ####################################################################################################################
@@ -177,18 +188,12 @@ expected_returns <- c(E_R_S, E_R_B, E_R_C)
 # Target return
 target_return <- 0.0075
 
-# Define the number of assets
-n_assets <- 3
-
-library(ROI)
-library(ROI.plugin.quadprog)
 
 # Covariance matrix (Dmat) and expected returns
 cov_matrix <- matrix(c(sigma_S^2, cov_S_B, cov_S_C,
                        cov_S_B, sigma_B^2, cov_B_C,
                        cov_S_C, cov_B_C, sigma_C^2), nrow = 3)
 expected_returns <- c(E_R_S, E_R_B, E_R_C)
-target_return <- 0.0075  # 75 bps target return
 
 # Number of assets (stocks, bonds, cash)
 n_assets <- 3
@@ -221,16 +226,20 @@ solution <- ROI_solve(qp_problem, solver = "quadprog")
 optimal_weights_LMVO <- solution$solution
 
 # Calculate portfolio volatility and expected return
-portfolio_volatility_LMVO <- sqrt(t(optimal_weights_LMVO) %*% cov_matrix %*% optimal_weights_LMVO)
-portfolio_return_LMVO <- sum(optimal_weights_LMVO * expected_returns)
+sigma_p_LMVO <- sqrt(t(optimal_weights_LMVO) %*% cov_matrix %*% optimal_weights_LMVO)
+E_R_p_LMVO <- sum(optimal_weights_LMVO * expected_returns)
+
+# Calculate Sharpe ratio
+Sharpe_ratio_LMVO <- (E_R_p_LMVO - E_R_C) / sigma_p_LMVO
+
 
 # Print the results in the desired format
 cat("LMVO Stocks weight: ", optimal_weights_LMVO[1], "\n") #0.1404295 
 cat("LMVO Bonds weight: ", optimal_weights_LMVO[2], "\n") # 0
 cat("LMVO Cash weight: ", optimal_weights_LMVO[3], "\n") # 1.35957 
-cat("LMVO Portfolio volatility: ", portfolio_volatility_LMVO, "\n") # 0.005721307
-cat("LMVO Expected return: ", portfolio_return_LMVO, "\n") # 0.0075
-
+cat("LMVO Portfolio volatility: ", sigma_p_LMVO, "\n") # 0.005721307
+cat("LMVO Expected return: ", E_R_p_LMVO, "\n") # 0.0075 by construction
+cat("LMVO Sharpe ratio: ", Sharpe_ratio_LMVO, "\n") # 0.6091265 
 
 
 ####################################################################################################################
@@ -311,9 +320,20 @@ optimal_weights_LRP <- result_LRP$solution
 portfolio_return_LRP <- sum(optimal_weights_LRP * expected_returns)
 portfolio_volatility_LRP <- sqrt(t(optimal_weights_LRP) %*% cov_matrix %*% optimal_weights_LRP)
 
+
+
+# Calculate the portfolio's expected return and vol
+E_R_p_LRP <- sum(optimal_weights_LRP * expected_returns)
+sigma_p_LRP <- sqrt(t(optimal_weights_LRP) %*% cov_matrix %*% optimal_weights_LRP)
+
+# Calculate Sharpe ratio
+Sharpe_ratio_LRP<- (E_R_p_LRP - E_R_C) / sigma_p_LRP
+
+
 # Print the results in the desired format
 cat("LRP Stocks weight: ", optimal_weights_LRP[1], "\n") # 0.1439084 
 cat("LRP bonds weight: ", optimal_weights_LRP[2], "\n") # 0.2135776 
-cat("LRP cash weight: ", optimal_weights_LRP[3], "\n") # 1.142514 
-cat("LRP portfolio volatility: ", portfolio_volatility_LRP, "\n") # 0.008135465
-cat("LRP expected return: ", portfolio_return_LRP, "\n") # 0.0075 by construction
+cat("LRP cash weight: ", optimal_weights_LRP[3], "\n") # 1.142514
+cat("LRP portfolio volatility: ", sigma_p_LRP, "\n") # 0.008135465
+cat("LRP expected return: ", E_R_p_LRP, "\n") # 0.0075 by construction
+cat("LRP Sharpe ratio: ", Sharpe_ratio_LRP, "\n") # 0.4283713 
