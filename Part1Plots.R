@@ -132,7 +132,7 @@ for (i in 1:n_portfolios) {
 }
 
 # Find the Global Minimum Variance Portfolio (GMV)
-min_variance_idx <- which.min(port_volatilities)
+min_variance_idx <- which.min(port_volatilities[efficient_indices])
 
 # Extract the return and volatility of the GMV portfolio
 gmv_return <- port_returns[min_variance_idx]
@@ -307,7 +307,7 @@ for (i in 1:n_portfolios) {
 }
 
 # Find the Global Minimum Variance Portfolio (GMV)
-min_variance_idx <- which.min(port_volatilities)
+min_variance_idx <- which.min(port_volatilities[efficient_indices])
 
 # Extract the return and volatility of the GMV portfolio
 gmv_return <- port_returns[min_variance_idx]
@@ -484,7 +484,7 @@ for (i in 1:n_portfolios) {
 }
 
 # Find the Global Minimum Variance Portfolio (GMV)
-min_variance_idx <- which.min(port_volatilities)
+min_variance_idx <- which.min(port_volatilities[efficient_indices])
 
 # Extract the return and volatility of the GMV portfolio
 gmv_return <- port_returns[min_variance_idx]
@@ -658,7 +658,7 @@ for (i in 1:n_portfolios) {
 }
 
 # Find the Global Minimum Variance Portfolio (GMV)
-min_variance_idx <- which.min(port_volatilities)
+min_variance_idx <- which.min(port_volatilities[efficient_indices])
 
 # Extract the return and volatility of the GMV portfolio
 gmv_return <- port_returns[min_variance_idx]
@@ -832,7 +832,7 @@ for (i in 1:n_portfolios) {
 }
 
 # Find the Global Minimum Variance Portfolio (GMV)
-min_variance_idx <- which.min(port_volatilities)
+min_variance_idx <- which.min(port_volatilities[efficient_indices])
 
 # Extract the return and volatility of the GMV portfolio
 gmv_return <- port_returns[min_variance_idx]
@@ -973,9 +973,9 @@ ggplot(eff_frontier_data, aes(x = Volatility, y = Expected_Return)) +
 ####################################################################################################################
 FullPeriod <- data.frame(
   "Date" = FFdata_Monthly_Factors$Date[757:1164],
-  "RF" = FFdata_Monthly_Factors$RF[757:1164],
+  "RF" = RF,
   "Bonds" = Bonds,
-  "Equity" = market_return/100)
+  "Equity" = market_return)
 row.names(FullPeriod) <- NULL
 FullPeriod$Date <- as.Date(paste0(FullPeriod$Date, "01"), format = "%Y%m%d")
 
@@ -1048,7 +1048,11 @@ FullPeriod <- FullPeriod %>%
          Log_Cum_Return_LMVO = log(Cum_Return_LMVO), ### MVO+L
          Strategy_LRP = w_S_LRP * Equity + w_B_LRP * Bonds + w_C_LRP * RF, ### LRP
          Cum_Return_LRP = cumprod(1 + Strategy_LRP), ### LRP
-         Log_Cum_Return_LRP = log(Cum_Return_LRP)) ### LRP
+         Log_Cum_Return_LRP = log(Cum_Return_LRP), ### LRP
+         Strategy_Market = Equity, ### Market
+         Cum_Return_Market = cumprod(1 + Strategy_Market), ### Market
+         Log_Cum_Return_Market = log(Cum_Return_Market)) ### Market
+
 
 
 # Plot the cumulative return with manually specified breaks
@@ -1065,6 +1069,9 @@ ggplot(FullPeriod, aes(x = Date)) +
   ### LRP
   geom_line(aes(y = Log_Cum_Return_LRP, group = 2), color = "darkgreen") +
   geom_point(aes(y = Log_Cum_Return_LRP), color = "darkgreen") +
+  ### Market
+  geom_line(aes(y = Log_Cum_Return_Market, group = 2), color = "green") +
+  geom_point(aes(y = Log_Cum_Return_Market), color = "green") +
   ggtitle("Cumulative Return of Strategies (Log Scale)") +
   xlab("Date") + ylab("Log Cumulative Return") +
   theme_minimal() +
@@ -1076,6 +1083,8 @@ ggplot(FullPeriod, aes(x = Date)) +
            color="red", size = 7) +
   annotate(geom="text", x="2015-01", y=1.7, label=paste("LRP"),
            color="darkgreen", size = 7) +
+  annotate(geom="text", x="2015-01", y=1.7, label=paste("Market"),
+           color="green", size = 7) +
   annotate(geom="text", x="2015-01", y=3, label=paste("MVO+L"),
            color="pink", size = 7)
 
@@ -1124,7 +1133,10 @@ Roaring90s <- Roaring90s %>%
          Log_Cum_Return_LMVO = log(Cum_Return_LMVO), ### MVO+L
          Strategy_LRP = w_S_LRP * Equity + w_B_LRP * Bonds + w_C_LRP * RF, ### LRP
          Cum_Return_LRP = cumprod(1 + Strategy_LRP), ### LRP
-         Log_Cum_Return_LRP = log(Cum_Return_LRP)) ### LRP
+         Log_Cum_Return_LRP = log(Cum_Return_LRP), ### LRP
+         Strategy_Market = Equity, ### Market
+         Cum_Return_Market = cumprod(1 + Strategy_Market), ### Market
+         Log_Cum_Return_Market = log(Cum_Return_Market)) ### Market
 
 
 # Plot the cumulative return with manually specified breaks
@@ -1141,6 +1153,9 @@ ggplot(Roaring90s, aes(x = Date)) +
   ### LRP
   geom_line(aes(y = Log_Cum_Return_LRP, group = 2), color = "darkgreen") +
   geom_point(aes(y = Log_Cum_Return_LRP), color = "darkgreen") +
+  ### Market
+  geom_line(aes(y = Log_Cum_Return_Market, group = 2), color = "green") +
+  geom_point(aes(y = Log_Cum_Return_Market), color = "green") +
   ggtitle("Cumulative Return of Strategies (Log Scale)") +
   xlab("Date") + ylab("Log Cumulative Return") +
   theme_minimal() +
@@ -1152,6 +1167,8 @@ ggplot(Roaring90s, aes(x = Date)) +
            color="red", size = 7) +
   annotate(geom="text", x="1997-01", y=1.5, label=paste("MVO+L"),
            color="pink", size = 7) +
+  annotate(geom="text", x="2022-01", y=1.5, label=paste("Market"),
+           color="green", size = 7) +
   annotate(geom="text", x="1997-01", y=1.7, label=paste("LRP"),
            color="darkgreen", size = 7)
 
@@ -1205,7 +1222,10 @@ FinancialCrisis <- FinancialCrisis %>%
          Log_Cum_Return_LMVO = log(Cum_Return_LMVO), ### MVO+L
          Strategy_LRP = w_S_LRP * Equity + w_B_LRP * Bonds + w_C_LRP * RF, ### LRP
          Cum_Return_LRP = cumprod(1 + Strategy_LRP), ### LRP
-         Log_Cum_Return_LRP = log(Cum_Return_LRP)) ### LRP
+         Log_Cum_Return_LRP = log(Cum_Return_LRP), ### LRP
+         Strategy_Market = Equity, ### Market
+         Cum_Return_Market = cumprod(1 + Strategy_Market), ### Market
+         Log_Cum_Return_Market = log(Cum_Return_Market)) ### Market
 
 
 # Plot the cumulative return with manually specified breaks
@@ -1222,6 +1242,9 @@ ggplot(FinancialCrisis, aes(x = Date)) +
   ### LRP
   geom_line(aes(y = Log_Cum_Return_LRP, group = 2), color = "darkgreen") +
   geom_point(aes(y = Log_Cum_Return_LRP), color = "darkgreen") +
+  ### Market
+  geom_line(aes(y = Log_Cum_Return_Market, group = 2), color = "green") +
+  geom_point(aes(y = Log_Cum_Return_Market), color = "green") +
   ggtitle("Cumulative Return of Strategies (Log Scale)") +
   xlab("Date") + ylab("Log Cumulative Return") +
   theme_minimal() +
@@ -1233,6 +1256,8 @@ ggplot(FinancialCrisis, aes(x = Date)) +
            color="red", size = 7) +
   annotate(geom="text", x="2006-01", y=1.5, label=paste("MVO+L"),
            color="pink", size = 7) +
+  annotate(geom="text", x="2022-01", y=1.5, label=paste("Market"),
+           color="green", size = 7) +
   annotate(geom="text", x="2006-01", y=1.7, label=paste("LRP"),
            color="darkgreen", size = 7)
 
@@ -1282,7 +1307,10 @@ GreatRecessionRecovery <- GreatRecessionRecovery %>%
          Log_Cum_Return_LMVO = log(Cum_Return_LMVO), ### MVO+L
          Strategy_LRP = w_S_LRP * Equity + w_B_LRP * Bonds + w_C_LRP * RF, ### LRP
          Cum_Return_LRP = cumprod(1 + Strategy_LRP), ### LRP
-         Log_Cum_Return_LRP = log(Cum_Return_LRP)) ### LRP
+         Log_Cum_Return_LRP = log(Cum_Return_LRP), ### LRP
+         Strategy_Market = Equity, ### Market
+         Cum_Return_Market = cumprod(1 + Strategy_Market), ### Market
+         Log_Cum_Return_Market = log(Cum_Return_Market)) ### Market
 
 
 # Plot the cumulative return with manually specified breaks
@@ -1299,6 +1327,9 @@ ggplot(GreatRecessionRecovery, aes(x = Date)) +
   ### LRP
   geom_line(aes(y = Log_Cum_Return_LRP, group = 2), color = "darkgreen") +
   geom_point(aes(y = Log_Cum_Return_LRP), color = "darkgreen") +
+  ### Market
+  geom_line(aes(y = Log_Cum_Return_Market, group = 2), color = "green") +
+  geom_point(aes(y = Log_Cum_Return_Market), color = "green") +
   ggtitle("Cumulative Return of Strategies (Log Scale)") +
   xlab("Date") + ylab("Log Cumulative Return") +
   theme_minimal() +
@@ -1310,6 +1341,8 @@ ggplot(GreatRecessionRecovery, aes(x = Date)) +
            color="red", size = 7) +
   annotate(geom="text", x="2018-01", y=1.5, label=paste("MVO+L"),
            color="pink", size = 7) +
+  annotate(geom="text", x="2022-01", y=1.5, label=paste("Market"),
+           color="green", size = 7) +
   annotate(geom="text", x="2018-01", y=1.7, label=paste("LRP"),
            color="darkgreen", size = 7)
 
@@ -1357,7 +1390,10 @@ Covid <- Covid %>%
          Log_Cum_Return_LMVO = log(Cum_Return_LMVO), ### MVO+L
          Strategy_LRP = w_S_LRP * Equity + w_B_LRP * Bonds + w_C_LRP * RF, ### LRP
          Cum_Return_LRP = cumprod(1 + Strategy_LRP), ### LRP
-         Log_Cum_Return_LRP = log(Cum_Return_LRP)) ### LRP
+         Log_Cum_Return_LRP = log(Cum_Return_LRP), ### LRP
+         Strategy_Market = Equity, ### Market
+         Cum_Return_Market = cumprod(1 + Strategy_Market), ### Market
+         Log_Cum_Return_Market = log(Cum_Return_Market)) ### Market
 
 
 # Plot the cumulative return with manually specified breaks
@@ -1374,6 +1410,9 @@ ggplot(Covid, aes(x = Date)) +
   ### LRP
   geom_line(aes(y = Log_Cum_Return_LRP, group = 2), color = "darkgreen") +
   geom_point(aes(y = Log_Cum_Return_LRP), color = "darkgreen") +
+  ### Market
+  geom_line(aes(y = Log_Cum_Return_Market, group = 2), color = "green") +
+  geom_point(aes(y = Log_Cum_Return_Market), color = "green") +
   ggtitle("Cumulative Return of Strategies (Log Scale)") +
   xlab("Date") + ylab("Log Cumulative Return") +
   theme_minimal() +
@@ -1385,6 +1424,8 @@ ggplot(Covid, aes(x = Date)) +
            color="red", size = 7) +
   annotate(geom="text", x="2022-01", y=1.5, label=paste("MVO+L"),
            color="pink", size = 7) +
+  annotate(geom="text", x="2022-01", y=1.5, label=paste("Market"),
+           color="green", size = 7) +
   annotate(geom="text", x="2022-01", y=1.7, label=paste("LRP"),
            color="darkgreen", size = 7)
 
