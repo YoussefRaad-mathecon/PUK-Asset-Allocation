@@ -476,7 +476,7 @@ portfolio_points <- data.frame(
 ggplot(portfolio_df, aes(x = Volatility, y = Return)) +
   geom_point(color = "blue", alpha = 0.5) +  
   geom_point(data = portfolio_points, aes(x = Volatility, y = Return, color = Name), size = 3) + 
-  labs(title = "Portfolio Comparison",
+  labs(title = "Efficient Frontier - Roaring 90s",
        x = "Volatility (Standard Deviation of Returns)",
        y = "Expected Return") +
   scale_color_manual(values = c("red", "green", "purple", "cyan", "magenta")) +  
