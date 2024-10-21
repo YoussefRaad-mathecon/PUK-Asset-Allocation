@@ -5,6 +5,8 @@
 ####################################################################################################################
 library(quadprog)
 library(nloptr)
+library(ROI)
+library(ROI.plugin.quadprog)
 
 ### Data
 set.seed(123)
@@ -72,11 +74,13 @@ sigma_p_6040 <- sqrt(w_S^2 * sigma_S^2 + w_B^2 * sigma_B^2 + 2 * w_S * w_B * cov
 # Check if portfolio meets return target
 target_return <- 0.0075  # 75 bps
 
+# Calculate Sharpe ratio
+Sharpe_ratio_6040 <- (E_R_p_6040 - E_R_C) / sigma_p_6040
 
 # Print results
 cat("60/40-portfolio expected return:", E_R_p_6040, "\n") # 0.006790775 < 0.0075 (does not meet target)
-cat("60/40-portfolio volatility :", sigma_p_6040, "\n") #0.02777475 
-
+cat("60/40-portfolio volatility :", sigma_p_6040, "\n") # 0.02777475 
+cat("Sharpe Ratio of the 60/40 portfolio:", Sharpe_ratio_6040, "\n") # 0.1675008
 ####################################################################################################################
 ####################################################################################################################
 #---------------------------------------- C ------------------------------------------------------------------------
@@ -133,14 +137,19 @@ result_MVO <- solve.QP(Dmat, dvec, Amat, bvec, meq = 2)
 
 # Get the optimal weights
 optimal_weights_MVO <- result_MVO$solution
-portfolio_return_MVO <- sum(optimal_weights_MVO * expected_returns)
-portfolio_volatility_MVO <- sqrt(t(optimal_weights_MVO) %*% cov_matrix %*% optimal_weights_MVO)
+E_R_p_MVO <- sum(optimal_weights_MVO * expected_returns)
+sigma_p_MVO <- sqrt(t(optimal_weights_MVO) %*% cov_matrix %*% optimal_weights_MVO)
+
+# Calculate Sharpe ratio
+Sharpe_ratio_MVO <- (E_R_p_MVO - E_R_C)/ sigma_p_MVO
+
 # Print the results
 cat("MVO stocks weight: ", optimal_weights_MVO[1], "\n") # 0.7127203 
 cat("MVO bonds weight: ", optimal_weights_MVO[2], "\n") # 0.2872797 
 cat("MVO cash weight: ", optimal_weights_MVO[3], "\n") # 0
-cat("MVO portfolio volatility: ", portfolio_volatility_MVO, "\n") # 0.03159363 
-cat("MVO expected return: ", portfolio_return_MVO, "\n") # 0.0075 by construction
+cat("MVO portfolio volatility: ", sigma_p_MVO, "\n") # 0.03159363 
+cat("MVO expected return: ", E_R_p_MVO, "\n") # 0.0075 by construction
+cat("MVO Sharpe ratio: ", Sharpe_ratio_MVO, "\n") # 0.1697026 
 
 ####################################################################################################################
 ####################################################################################################################
@@ -168,62 +177,84 @@ print(cov_matrix)
 # Define the expected returns vector for stocks, bonds, and cash
 expected_returns <- c(E_R_S, E_R_B, E_R_C)
 
-# Target return
-target_return <- 0.0075
-
 # Define the number of assets
 n_assets <- 3
 
+# Target return
+target_return <- 0.0075  # 75 bps target return
 
-# Set up Dmat and dvec for the quadratic programming solver
-Dmat <- cov_matrix  # 2*Covariance matrix as per quadratic programming setup
-dvec <- rep(0, n_assets)  # Zeros for the linear part of the quadratic objective
+# Covariance matrix (Dmat) and expected returns
+cov_matrix <- matrix(c(sigma_S^2, cov_S_B, cov_S_C,
+                       cov_S_B, sigma_B^2, cov_B_C,
+                       cov_S_C, cov_B_C, sigma_C^2), nrow = 3)
+expected_returns <- c(E_R_S, E_R_B, E_R_C)
 
-# Set up constraint matrix (Amat), right-hand side (bvec), and sense
-Amat <- cbind(
-  expected_returns,  # Return constraint
-  rep(1, n_assets),  # Sum of weights constraint (now allows leverage)
-  diag(n_assets)     # Identity matrix to enforce non-negative weights
+
+
+# Define the optimization problem
+Dmat <- cov_matrix  # This is the variance-covariance matrix
+dvec <- rep(0, n_assets)  # No linear term (minimize variance)
+
+# Define the constraints
+Amat <- rbind(
+  expected_returns,  # Ensures the target return is met
+  rep(1, n_assets)   # Ensures the sum of weights <= 1.5 (leverage constraint)
+)
+bvec <- c(target_return, 1.5)  # The target return and max leverage constraints
+
+# Formulate the optimization problem
+qp_problem <- OP(
+  objective = Q_objective(Q = Dmat, L = dvec),  # Quadratic objective
+  constraints = L_constraint(
+    L = Amat,
+    dir = c("==", "<="),  # "==" for the target return, "<=" for leverage
+    rhs = bvec
+  ),
+  bounds = V_bound(lb = rep(0, n_assets), ub = rep(1.5, n_assets))  # Non-negative and no shorting
 )
 
-# The first element in bvec is the target return, the second is 1.5 to allow for leverage
-# The rest are zeros for non-negative weights
-bvec <- c(target_return, 1.5, rep(0, n_assets))
+solution <- ROI_solve(qp_problem, solver = "quadprog")
 
-# Solve the quadratic program (meq = 2 ensures the first two constraints are equality constraints)
-result_LMVO <- solve.QP(Dmat, dvec, Amat, bvec, meq = 2)
+# Extract the optimal weights
+optimal_weights_LMVO <- solution$solution
 
-# Get the optimal weights
-optimal_weights_LMVO <- result_LMVO$solution
+# Calculate portfolio volatility and expected return
+sigma_p_LMVO <- sqrt(t(optimal_weights_LMVO) %*% cov_matrix %*% optimal_weights_LMVO)
+E_R_p_LMVO <- sum(optimal_weights_LMVO * expected_returns)
 
-# Calculate the portfolio's expected return and vol
-portfolio_return_LMVO <- sum(optimal_weights_MVO * expected_returns)
-portfolio_volatility_LMVO <- sqrt(t(optimal_weights_LMVO) %*% cov_matrix %*% optimal_weights_LMVO)
-# Print the results
+# Calculate Sharpe ratio
+Sharpe_ratio_LMVO <- (E_R_p_LMVO - E_R_C) / sigma_p_LMVO
+
+
+# Print the results 
 cat("LMVO stocks weight: ", optimal_weights_LMVO[1], "\n") # 0.5533951 
 cat("LMVO bonds weight: ", optimal_weights_LMVO[2], "\n") # 0.3704708 
 cat("LMVO cash weight: ", optimal_weights_LMVO[3], "\n") # 0.5761342
-cat("LMVO portfolio volatility: ", portfolio_volatility_LMVO, "\n") # 0.02515146 
-cat("LMVO expected return: ", portfolio_return_LMVO, "\n") # 0.0075 by construction
+cat("LMVO portfolio volatility: ", sigma_p_LMVO, "\n") # 0.02515146 
+cat("LMVO expected return: ", E_R_p_LMVO, "\n") # 0.0075 by construction
+cat("LMVO Sharpe ratio: ", Sharpe_ratio_LMVO, "\n") # 0.2131693
+
+
 
 ####################################################################################################################
 ####################################################################################################################
 #---------------------------------------- E ------------------------------------------------------------------------
 ####################################################################################################################
 ####################################################################################################################
-# Define expected returns and volatilities 
-E_R_C <- mean(RF)   # Expected return for cash
-E_R_S <- mean(market_return)   # Expected return for stocks
-E_R_B <- mean(Bonds)   # Expected return for bonds
-sigma_C <- sd(RF)   # Volatility of cash
-sigma_S <- sd(market_return)   # Volatility of stocks
-sigma_B <- sd(Bonds)   # Volatility of bonds
+# Define expected returns and volatilities
+E_R_C <- mean(RF)  # Expected return for cash
+E_R_S <- mean(market_return)  # Expected return for stocks
+E_R_B <- mean(Bonds)  # Expected return for bonds
+sigma_C <- sd(RF)  # Volatility of cash
+sigma_S <- sd(market_return)  # Volatility of stocks
+sigma_B <- sd(Bonds)  # Volatility of bonds
 
 # Calculate covariances
 cov_S_B <- cov(market_return, Bonds, use = "pairwise.complete.obs")
 cov_S_C <- cov(market_return, RF, use = "pairwise.complete.obs")
 cov_B_C <- cov(Bonds, RF, use = "pairwise.complete.obs")
 
+# Covariance matrix
 cov_matrix <- matrix(c(sigma_S^2, cov_S_B, cov_S_C,
                        cov_S_B, sigma_B^2, cov_B_C,
                        cov_S_C, cov_B_C, sigma_C^2), nrow = 3)
@@ -231,7 +262,7 @@ cov_matrix <- matrix(c(sigma_S^2, cov_S_B, cov_S_C,
 # Expected returns
 expected_returns <- c(E_R_S, E_R_B, E_R_C)
 
-# Define the number of assets
+# Number of assets
 n_assets <- 3
 
 # Portfolio variance calculation
@@ -256,401 +287,188 @@ objective_function <- function(x, cov_matrix) {
   return(f_val)
 }
 
-# Constraints: sum of weights equals 1 and portfolio return equals target return
-equality_constraint <- function(x) {
-  return(c(sum(x) - 1.5,  # Sum of weights constraint
-           sum(x * expected_returns) - 0.0075))  # Target return constraint (75 bps)
+# Inequality constraints: leverage between 1 and 1.5
+inequality_constraint <- function(x) {
+  return(c(sum(x) - 1.5,   # Upper bound on leverage
+           1 - sum(x)))    # Lower bound on leverage
 }
 
-# Optimization using nloptr (COBYLA method)
-x0 <- rep(0.5, n_assets)  # Initial guess (equal weights)
+# Equality constraint: target portfolio return equals 75bps
+equality_constraint <- function(x) {
+  return(sum(x * expected_returns) - 0.0075)  # Target return of 75 bps
+}
+
+# Initial guess for the weights
+x0 <- rep(0.5, n_assets)
 
 # Lower and upper bounds for weights
-lb <- rep(0, n_assets)
-ub <- rep(1.5, n_assets)
+lb <- rep(0, n_assets)  # No shorting (non-negative weights)
+ub <- rep(1.5, n_assets)  # Upper limit for weights (due to leverage constraint)
 
-# Optimization problem with added target return constraint
+# Optimization using nloptr with COBYLA method
 result_LRP <- nloptr(x0 = x0,
-                 eval_f = function(x) objective_function(x, cov_matrix),
-                 lb = lb,
-                 ub = ub,
-                 eval_g_eq = equality_constraint,
-                 opts = list(algorithm = "NLOPT_LN_COBYLA",  # COBYLA: Gradient-free algorithm
-                             xtol_rel = 1.0e-8,  # Tolerance
-                             maxeval = 10000))  # Maximum number of iterations
+                     eval_f = function(x) objective_function(x, cov_matrix),
+                     lb = lb,
+                     ub = ub,
+                     eval_g_ineq = inequality_constraint,  # Inequality constraints for leverage
+                     eval_g_eq = equality_constraint,      # Target return constraint
+                     opts = list(algorithm = "NLOPT_LN_COBYLA",  # COBYLA method
+                                 xtol_rel = 1.0e-8,  # Tolerance level
+                                 maxeval = 10000))   # Maximum number of iterations
+
+# Extract optimal weights
 optimal_weights_LRP <- result_LRP$solution
 
-# Calculate the portfolio's expected return and vol
-portfolio_return_LRP <- sum(optimal_weights_LRP * expected_returns)
-portfolio_volatility_LRP <- sqrt(t(optimal_weights_LRP) %*% cov_matrix %*% optimal_weights_LRP)
+# Calculate portfolio's expected return and volatility
+E_R_p_LRP <- sum(optimal_weights_LRP * expected_returns)
+sigma_p_LRP <- sqrt(t(optimal_weights_LRP) %*% cov_matrix %*% optimal_weights_LRP)
 
-# Print the results in the desired format
+# Calculate Sharpe ratio
+Sharpe_ratio_LRP <- (E_R_p_LRP - E_R_C) / sigma_p_LRP
+
+# Print the results
 cat("LRP Stocks weight: ", optimal_weights_LRP[1], "\n") # 0.484716 
 cat("LRP bonds weight: ", optimal_weights_LRP[2], "\n") # 0.9317936
 cat("LRP cash weight: ", optimal_weights_LRP[3], "\n") # 0.08349038
-cat("LRP portfolio volatility: ", portfolio_volatility_LRP, "\n") # 0.0280509
-cat("LRP expected return: ", portfolio_return_LRP, "\n") # 0.0075 by construction
-
-
-####################################################################################################################
-####################################################################################################################
-#---------------------------------------- F ------------------------------------------------------------------------
-####################################################################################################################
-####################################################################################################################
-FullPeriod <- data.frame(
-  "Date" = FFdata_Monthly_Factors$Date[757:1164],
-  "RF" = FFdata_Monthly_Factors$RF[757:1164],
-  "Bonds" = Bonds,
-  "Equity" = market_return/100)
-row.names(FullPeriod) <- NULL
-FullPeriod$Date <- as.Date(paste0(FullPeriod$Date, "01"), format = "%Y%m%d")
-
-### 199001 - 200112
-Roaring90s <- subset(FullPeriod,
-                     Date >= as.Date("1990-01-01") & Date <= as.Date("2001-12-01"))
-row.names(Roaring90s) <- NULL
-Roaring90s$Date <- format(Roaring90s$Date, "%Y-%m")
-
-### 200201 - 200912
-FinancialCrisis <- subset(FullPeriod,
-                          Date >= as.Date("2002-01-01") & Date <= as.Date("2009-12-01"))
-row.names(FinancialCrisis) <- NULL
-FinancialCrisis$Date <- format(FinancialCrisis$Date, "%Y-%m")
-
-### 201001 - 201912
-GreatRecessionRecovery <- subset(FullPeriod,
-                                 Date >= as.Date("2010-01-01") & Date <= as.Date("2019-12-01"))
-row.names(GreatRecessionRecovery) <- NULL
-GreatRecessionRecovery$Date <- format(GreatRecessionRecovery$Date, "%Y-%m")
-
-### 202001 - 202312
-Covid <- subset(FullPeriod,
-                Date >= as.Date("2020-01-01") & Date <= as.Date("2023-12-01"))
-row.names(Covid) <- NULL
-Covid$Date <- format(Covid$Date, "%Y-%m")
-
-### 199001 - 202312
-FullPeriod$Date <- format(FullPeriod$Date, "%Y-%m")
-
-
-###################################### Full Period Plot ########################################
-
-# Convert Date to factor to keep it as "YYYY-MM"
-FullPeriod$Date <- factor(FullPeriod$Date)
-# Get labels for every 5th year (e.g., "1990-01", "1995-01", etc.)
-FullPeriodBreaks <- FullPeriod$Date[seq(1, length(FullPeriod$Date), by = 12 * 5)]  # every 5 years
-
-# Backtest: 60% in RF and 40% in Bonds
-FullPeriod <- FullPeriod %>%
-  mutate(Strategy_60_40 = 0.6 * Equity + 0.4 * Bonds, ### 60/40
-         Cum_Return_60_40 = cumprod(1 + Strategy_60_40), ### 60/40
-         Log_Cum_Return_60_40 = log(Cum_Return_60_40), ### 60/40
-         Strategy_MVO_Unrestricted = optimal_weights_leverage[1] * Equity + optimal_weights_leverage[2] * Bonds, ### MVO unrestricted
-         Cum_Return_MVO_Unrestricted = cumprod(1 + Strategy_MVO_Unrestricted), ### MVO unrestricted
-         Log_Cum_Return_MVO_Unrestricted = log(Cum_Return_MVO_Unrestricted), ### MVO unrestricted
-         Strategy_MVO = optimal_weights[1] * Equity + optimal_weights[2] * Bonds, ### MVO
-         Cum_Return_MVO = cumprod(1 + Strategy_MVO), ### MVO
-         Log_Cum_Return_MVO = log(Cum_Return_MVO), ### MVO
-         Strategy_MVOL = optimal_weights_leverage_fixed[1] * Equity + optimal_weights_leverage_fixed[2] * Bonds, ### MVO+L
-         Cum_Return_MVOL = cumprod(1 + Strategy_MVOL), ### MVO+L
-         Log_Cum_Return_MVOL = log(Cum_Return_MVOL), ### MVO+L
-         Strategy_LRP = optimal_weights_LRP[1] * Equity + optimal_weights_LRP[2] * Bonds, ### LRP
-         Cum_Return_LRP = cumprod(1 + Strategy_LRP), ### LRP
-         Log_Cum_Return_LRP = log(Cum_Return_LRP)) ### LRP
-
-
-# Plot the cumulative return with manually specified breaks
-ggplot(FullPeriod, aes(x = Date)) +
-  ### 60/40
-  geom_line(aes(y = Log_Cum_Return_60_40, group = 1), color = "blue") +
-  geom_point(aes(y = Log_Cum_Return_60_40), color = "blue") +
-  ### MVO (unrestricted)
-  geom_line(aes(y = Log_Cum_Return_MVO_Unrestricted, group = 2), color = "pink") +
-  geom_point(aes(y = Log_Cum_Return_MVO_Unrestricted), color = "pink") +
-  ### MVO
-  geom_line(aes(y = Log_Cum_Return_MVO, group = 2), color = "red") +
-  geom_point(aes(y = Log_Cum_Return_MVO), color = "red") +
-  ### MVO+L
-  geom_line(aes(y = Log_Cum_Return_MVOL, group = 2), color = "green") +
-  geom_point(aes(y = Log_Cum_Return_MVOL), color = "green") +
-  ### LRP
-  geom_line(aes(y = Log_Cum_Return_LRP, group = 2), color = "darkgreen") +
-  geom_point(aes(y = Log_Cum_Return_LRP), color = "darkgreen") +
-  ggtitle("Cumulative Return of Strategies (Log Scale)") +
-  xlab("Date") + ylab("Log Cumulative Return") +
-  theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
-  scale_x_discrete(breaks = FullPeriodBreaks) +  # Use your predefined breaks
-  annotate(geom="text", x="2021-07", y=2.3, label=paste("60/40"),
-           color="blue", size = 7) +
-  annotate(geom="text", x="2015-01", y=1.7, label=paste("MVO"),
-           color="red", size = 7) +
-  annotate(geom="text", x="2015-01", y=1.7, label=paste("MVO (unrestricted)"),
-           color="pink", size = 7) +
-  annotate(geom="text", x="2015-01", y=1.7, label=paste("LRP"),
-           color="darkgreen", size = 7) +
-  annotate(geom="text", x="2015-01", y=3, label=paste("MVO+L"),
-           color="green", size = 7)
+cat("LRP portfolio volatility: ", sigma_p_LRP, "\n") # 0.0280509
+cat("LRP expected return: ", E_R_p_LRP, "\n") # 0.0075 by construction
+cat("LRP Sharpe ratio: ", Sharpe_ratio_LRP, "\n") # 0.1911354
 
 
 
-
-###################################### Roaring 90s Plot ########################################
-
-# Convert Date to factor to keep it as "YYYY-MM"
-Roaring90s$Date <- factor(Roaring90s$Date)
-# Get labels for every 5th year (e.g., "1990-01", "1995-01", etc.)
-Roaring90sBreaks <- Roaring90s$Date[seq(1, length(Roaring90s$Date), by = 12 * 1)]  # every 5 years
-
-
-# Backtest: 60% in RF and 40% in Bonds
-Roaring90s <- Roaring90s %>%
-  mutate(Strategy_60_40 = 0.6 * Equity + 0.4 * Bonds, ### 60/40
-         Cum_Return_60_40 = cumprod(1 + Strategy_60_40), ### 60/40
-         Log_Cum_Return_60_40 = log(Cum_Return_60_40), ### 60/40
-         Strategy_MVO_Unrestricted = optimal_weights_leverage[1] * Equity + optimal_weights_leverage[2] * Bonds, ### MVO unrestricted
-         Cum_Return_MVO_Unrestricted = cumprod(1 + Strategy_MVO_Unrestricted), ### MVO unrestricted
-         Log_Cum_Return_MVO_Unrestricted = log(Cum_Return_MVO_Unrestricted), ### MVO unrestricted
-         Strategy_MVO = optimal_weights[1] * Equity + optimal_weights[2] * Bonds, ### MVO
-         Cum_Return_MVO = cumprod(1 + Strategy_MVO), ### MVO
-         Log_Cum_Return_MVO = log(Cum_Return_MVO), ### MVO
-         Strategy_MVOL = optimal_weights_leverage_fixed[1] * Equity + optimal_weights_leverage_fixed[2] * Bonds, ### MVO+L
-         Cum_Return_MVOL = cumprod(1 + Strategy_MVOL), ### MVO+L
-         Log_Cum_Return_MVOL = log(Cum_Return_MVOL), ### MVO+L
-         Strategy_LRP = optimal_weights_LRP[1] * Equity + optimal_weights_LRP[2] * Bonds, ### LRP
-         Cum_Return_LRP = cumprod(1 + Strategy_LRP), ### LRP
-         Log_Cum_Return_LRP = log(Cum_Return_LRP)) ### LRP
+# Function to check f(x_star) = 0 condition
+check_f_zero <- function(optimal_weights, cov_matrix) {
+  marginal_contributions <- cov_matrix %*% optimal_weights
+  total_risk <- sqrt(portfolio_variance(optimal_weights, cov_matrix))
+  risk_contributions <- optimal_weights * marginal_contributions / total_risk
+  
+  f_val_check <- 0
+  for (i in 1:n_assets) {
+    for (j in 1:n_assets) {
+      f_val_check <- f_val_check + (risk_contributions[i] - risk_contributions[j])^2
+    }
+  }
+  
+  return(f_val_check)
+}
 
 
-# Plot the cumulative return with manually specified breaks
-ggplot(Roaring90s, aes(x = Date)) +
-  ### 60/40
-  geom_line(aes(y = Log_Cum_Return_60_40, group = 1), color = "blue") +
-  geom_point(aes(y = Log_Cum_Return_60_40), color = "blue") +
-  ### MVO (unrestricted)
-  geom_line(aes(y = Log_Cum_Return_MVO_Unrestricted, group = 2), color = "pink") +
-  geom_point(aes(y = Log_Cum_Return_MVO_Unrestricted), color = "pink") +
-  ### MVO
-  geom_line(aes(y = Log_Cum_Return_MVO, group = 2), color = "red") +
-  geom_point(aes(y = Log_Cum_Return_MVO), color = "red") +
-  ### MVO+L
-  geom_line(aes(y = Log_Cum_Return_MVOL, group = 2), color = "green") +
-  geom_point(aes(y = Log_Cum_Return_MVOL), color = "green") +
-  ### LRP
-  geom_line(aes(y = Log_Cum_Return_LRP, group = 2), color = "darkgreen") +
-  geom_point(aes(y = Log_Cum_Return_LRP), color = "darkgreen") +
-  ggtitle("Cumulative Return of Strategies (Log Scale)") +
-  xlab("Date") + ylab("Log Cumulative Return") +
-  theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
-  scale_x_discrete(breaks = FullPeriodBreaks) +  # Use your predefined breaks
-  annotate(geom="text", x="2000-01", y=1, label=paste("60/40"),
-           color="blue", size = 7) +
-  annotate(geom="text", x="1997-01", y=0.7, label=paste("MVO"),
-           color="red", size = 7) +
-  annotate(geom="text", x="1997-01", y=1.5, label=paste("MVO+L"),
-           color="green", size = 7) +
-  annotate(geom="text", x="1997-01", y=1.7, label=paste("MVO (unrestricted)"),
-           color="pink", size = 7) +
-  annotate(geom="text", x="1997-01", y=1.7, label=paste("LRP"),
-           color="darkgreen", size = 7)
+check_f_zero(optimal_weights_LRP, cov_matrix)
+
+#--------------------------------------------extra----------------------------------------------------------------------#
+#Value-Weighted portfolio / Market Portfolio
+E_R_p_VW <- mean(market_return)
+sigma_p_VW <- sd(market_return)
+
+Sharpe_ratio_VW <- (E_R_p_VW - E_R_C) / sigma_p_VW 
+cat("VW Portfolio Return: ", mean(market_return), "\n") # 0.009307537
+cat("VW Portfolio Volatility: ", sd(market_return), "\n") # 0.04410156 
+cat("VW Portfolio Sharpe Ratio:", Sharpe_ratio_VW, "\n") # 0.1625579 
+
+#--------------------------------------------extra: efficient frontier test-------------------------------------------------#
+
+# Define expected returns and volatilities (assumed these are already calculated)
+E_R_C <- mean(RF)   # Expected return for cash
+E_R_S <- mean(market_return)   # Expected return for stocks
+E_R_B <- mean(Bonds)   # Expected return for bonds
+sigma_C <- sd(RF)   # Volatility of cash
+sigma_S <- sd(market_return)   # Volatility of stocks
+sigma_B <- sd(Bonds)   # Volatility of bonds
+
+# Calculate covariances
+cov_S_B <- cov(market_return, Bonds, use = "pairwise.complete.obs")
+cov_S_C <- cov(market_return, RF, use = "pairwise.complete.obs")
+cov_B_C <- cov(Bonds, RF, use = "pairwise.complete.obs")
+
+# Define the covariance matrix (Dmat) and expected returns
+cov_matrix <- matrix(c(sigma_S^2, cov_S_B, cov_S_C,
+                       cov_S_B, sigma_B^2, cov_B_C,
+                       cov_S_C, cov_B_C, sigma_C^2), nrow = 3)
+expected_returns <- c(E_R_S, E_R_B, E_R_C)
+
+# Number of assets (stocks, bonds, cash)
+n_assets <- length(expected_returns)
+
+# Function to calculate the efficient frontier
+efficient_frontier <- function(cov_matrix, expected_returns, n_points = 10000) {
+  # Initialize empty lists to store results
+  frontier_returns <- c()
+  frontier_volatilities <- c()
+  
+  # Create a sequence of target returns
+  target_returns <- seq(min(expected_returns), max(expected_returns), length.out = n_points)
+  
+  for (target_return in target_returns) {
+    # Solve the quadratic program to minimize volatility (quadratic form) subject to target return
+    result <- solve.QP(Dmat = cov_matrix, dvec = rep(0, n_assets), 
+                       Amat = cbind(1, expected_returns), 
+                       bvec = c(1, target_return), meq = 2)
+    
+    weights <- result$solution
+    portfolio_return <- sum(weights * expected_returns)
+    portfolio_volatility <- sqrt(t(weights) %*% cov_matrix %*% weights)
+    
+    # Store the results
+    frontier_returns <- c(frontier_returns, portfolio_return)
+    frontier_volatilities <- c(frontier_volatilities, portfolio_volatility)
+  }
+  
+  return(data.frame(Return = frontier_returns, Volatility = frontier_volatilities))
+}
+
+# Generate random portfolios
+n_portfolios <- 10000
+weights <- matrix(runif(n_portfolios * n_assets, min = 0, max = 1), nrow = n_portfolios, ncol = n_assets)
+weights <- weights / rowSums(weights)  # Normalize so that weights sum to 1
+
+# Portfolio statistics function
+portfolio_stats <- function(w, cov_matrix, expected_returns) {
+  portfolio_return <- sum(w * expected_returns)
+  portfolio_volatility <- sqrt(t(w) %*% cov_matrix %*% w)
+  return(c(portfolio_return, portfolio_volatility))
+}
+
+# Calculate statistics for random portfolios
+portfolio_results <- t(apply(weights, 1, portfolio_stats, cov_matrix = cov_matrix, expected_returns = expected_returns))
+portfolio_df <- data.frame(
+  Return = portfolio_results[, 1],
+  Volatility = portfolio_results[, 2]
+)
+
+# Compute the efficient frontier
+efficient_frontier_df <- efficient_frontier(cov_matrix, expected_returns)
+
+# Define weights for the specified portfolios
+w_60_40 <- c(0.60, 0.40, 0) 
+w_MVO <- c(optimal_weights_MVO)  
+w_LMVO <- c(optimal_weights_LMVO) 
+w_LRP <- c(optimal_weights_LRP)  
+w_VW <- c(1, 0, 0)  
+
+# Calculate stats for each specified portfolio
+portfolio_60_40 <- portfolio_stats(w_60_40, cov_matrix, expected_returns)
+portfolio_MVO <- portfolio_stats(w_MVO, cov_matrix, expected_returns)
+portfolio_LMVO <- portfolio_stats(w_LMVO, cov_matrix, expected_returns)
+portfolio_LRP <- portfolio_stats(w_LRP, cov_matrix, expected_returns)
+portfolio_VW <- portfolio_stats(w_VW, cov_matrix, expected_returns)
+
+# Combine results into a data frame for easy plotting
+portfolio_names <- c("60/40", "MVO", "LMVO", "LRP", "VW")
+portfolio_points <- data.frame(
+  Name = portfolio_names,
+  Return = c(portfolio_60_40[1], portfolio_MVO[1], portfolio_LMVO[1], portfolio_LRP[1], portfolio_VW[1]),
+  Volatility = c(portfolio_60_40[2], portfolio_MVO[2], portfolio_LMVO[2], portfolio_LRP[2], portfolio_VW[2])
+)
+
+# Plot both the random portfolios and the specified portfolios (without the efficient frontier line)
+ggplot(portfolio_df, aes(x = Volatility, y = Return)) +
+  geom_point(color = "blue", alpha = 0.5) +  
+  geom_point(data = portfolio_points, aes(x = Volatility, y = Return, color = Name), size = 3) + 
+  labs(title = "Portfolio Comparison",
+       x = "Volatility (Standard Deviation of Returns)",
+       y = "Expected Return") +
+  scale_color_manual(values = c("red", "green", "purple", "cyan", "magenta")) +  
+  theme_minimal()
 
 
-
-
-
-
-
-
-
-
-###################################### Financial Crisis Plot ########################################
-
-# Convert Date to factor to keep it as "YYYY-MM"
-FinancialCrisis$Date <- factor(FinancialCrisis$Date)
-# Get labels for every 5th year (e.g., "1990-01", "1995-01", etc.)
-FinancialCrisisBreaks <- FinancialCrisis$Date[seq(1, length(FinancialCrisis$Date), by = 12 * 1)]  # every 5 years
-
-# Backtest: 60% in RF and 40% in Bonds
-FinancialCrisis <- FinancialCrisis %>%
-  mutate(Strategy_60_40 = 0.6 * Equity + 0.4 * Bonds, ### 60/40
-         Cum_Return_60_40 = cumprod(1 + Strategy_60_40), ### 60/40
-         Log_Cum_Return_60_40 = log(Cum_Return_60_40), ### 60/40
-         Strategy_MVO_Unrestricted = optimal_weights_leverage[1] * Equity + optimal_weights_leverage[2] * Bonds, ### MVO unrestricted
-         Cum_Return_MVO_Unrestricted = cumprod(1 + Strategy_MVO_Unrestricted), ### MVO unrestricted
-         Log_Cum_Return_MVO_Unrestricted = log(Cum_Return_MVO_Unrestricted), ### MVO unrestricted
-         Strategy_MVO = optimal_weights[1] * Equity + optimal_weights[2] * Bonds, ### MVO
-         Cum_Return_MVO = cumprod(1 + Strategy_MVO), ### MVO
-         Log_Cum_Return_MVO = log(Cum_Return_MVO), ### MVO
-         Strategy_MVOL = optimal_weights_leverage_fixed[1] * Equity + optimal_weights_leverage_fixed[2] * Bonds, ### MVO+L
-         Cum_Return_MVOL = cumprod(1 + Strategy_MVOL), ### MVO+L
-         Log_Cum_Return_MVOL = log(Cum_Return_MVOL), ### MVO+L
-         Strategy_LRP = optimal_weights_LRP[1] * Equity + optimal_weights_LRP[2] * Bonds, ### LRP
-         Cum_Return_LRP = cumprod(1 + Strategy_LRP), ### LRP
-         Log_Cum_Return_LRP = log(Cum_Return_LRP)) ### LRP
-
-
-# Plot the cumulative return with manually specified breaks
-ggplot(FinancialCrisis, aes(x = Date)) +
-  ### 60/40
-  geom_line(aes(y = Log_Cum_Return_60_40, group = 1), color = "blue") +
-  geom_point(aes(y = Log_Cum_Return_60_40), color = "blue") +
-  ### MVO (unrestricted)
-  geom_line(aes(y = Log_Cum_Return_MVO_Unrestricted, group = 2), color = "pink") +
-  geom_point(aes(y = Log_Cum_Return_MVO_Unrestricted), color = "pink") +
-  ### MVO
-  geom_line(aes(y = Log_Cum_Return_MVO, group = 2), color = "red") +
-  geom_point(aes(y = Log_Cum_Return_MVO), color = "red") +
-  ### MVO+L
-  geom_line(aes(y = Log_Cum_Return_MVOL, group = 2), color = "green") +
-  geom_point(aes(y = Log_Cum_Return_MVOL), color = "green") +
-  ### LRP
-  geom_line(aes(y = Log_Cum_Return_LRP, group = 2), color = "darkgreen") +
-  geom_point(aes(y = Log_Cum_Return_LRP), color = "darkgreen") +
-  ggtitle("Cumulative Return of Strategies (Log Scale)") +
-  xlab("Date") + ylab("Log Cumulative Return") +
-  theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
-  scale_x_discrete(breaks = FullPeriodBreaks) +  # Use your predefined breaks
-  annotate(geom="text", x="2006-01", y=1, label=paste("60/40"),
-           color="blue", size = 7) +
-  annotate(geom="text", x="2006-01", y=0.7, label=paste("MVO"),
-           color="red", size = 7) +
-  annotate(geom="text", x="2006-01", y=1.5, label=paste("MVO+L"),
-           color="green", size = 7) +
-  annotate(geom="text", x="2006-01", y=1.7, label=paste("MVO (unrestricted)"),
-           color="pink", size = 7) +
-  annotate(geom="text", x="2006-01", y=1.7, label=paste("LRP"),
-           color="darkgreen", size = 7)
-
-
-
-
-
-
-###################################### Great Recession Recovery Plot ########################################
-
-# Convert Date to factor to keep it as "YYYY-MM"
-GreatRecessionRecovery$Date <- factor(GreatRecessionRecovery$Date)
-# Get labels for every 5th year (e.g., "1990-01", "1995-01", etc.)
-GreatRecessionRecoveryBreaks <- GreatRecessionRecovery$Date[seq(1, length(GreatRecessionRecovery$Date), by = 12 * 1)]  # every 5 years
-
-
-
-
-# Backtest: 60% in RF and 40% in Bonds
-GreatRecessionRecovery <- GreatRecessionRecovery %>%
-  mutate(Strategy_60_40 = 0.6 * Equity + 0.4 * Bonds, ### 60/40
-         Cum_Return_60_40 = cumprod(1 + Strategy_60_40), ### 60/40
-         Log_Cum_Return_60_40 = log(Cum_Return_60_40), ### 60/40
-         Strategy_MVO_Unrestricted = optimal_weights_leverage[1] * Equity + optimal_weights_leverage[2] * Bonds, ### MVO unrestricted
-         Cum_Return_MVO_Unrestricted = cumprod(1 + Strategy_MVO_Unrestricted), ### MVO unrestricted
-         Log_Cum_Return_MVO_Unrestricted = log(Cum_Return_MVO_Unrestricted), ### MVO unrestricted
-         Strategy_MVO = optimal_weights[1] * Equity + optimal_weights[2] * Bonds, ### MVO
-         Cum_Return_MVO = cumprod(1 + Strategy_MVO), ### MVO
-         Log_Cum_Return_MVO = log(Cum_Return_MVO), ### MVO
-         Strategy_MVOL = optimal_weights_leverage_fixed[1] * Equity + optimal_weights_leverage_fixed[2] * Bonds, ### MVO+L
-         Cum_Return_MVOL = cumprod(1 + Strategy_MVOL), ### MVO+L
-         Log_Cum_Return_MVOL = log(Cum_Return_MVOL), ### MVO+L
-         Strategy_LRP = optimal_weights_LRP[1] * Equity + optimal_weights_LRP[2] * Bonds, ### LRP
-         Cum_Return_LRP = cumprod(1 + Strategy_LRP), ### LRP
-         Log_Cum_Return_LRP = log(Cum_Return_LRP)) ### LRP
-
-
-# Plot the cumulative return with manually specified breaks
-ggplot(GreatRecessionRecovery, aes(x = Date)) +
-  ### 60/40
-  geom_line(aes(y = Log_Cum_Return_60_40, group = 1), color = "blue") +
-  geom_point(aes(y = Log_Cum_Return_60_40), color = "blue") +
-  ### MVO (unrestricted)
-  geom_line(aes(y = Log_Cum_Return_MVO_Unrestricted, group = 2), color = "pink") +
-  geom_point(aes(y = Log_Cum_Return_MVO_Unrestricted), color = "pink") +
-  ### MVO
-  geom_line(aes(y = Log_Cum_Return_MVO, group = 2), color = "red") +
-  geom_point(aes(y = Log_Cum_Return_MVO), color = "red") +
-  ### MVO+L
-  geom_line(aes(y = Log_Cum_Return_MVOL, group = 2), color = "green") +
-  geom_point(aes(y = Log_Cum_Return_MVOL), color = "green") +
-  ### LRP
-  geom_line(aes(y = Log_Cum_Return_LRP, group = 2), color = "darkgreen") +
-  geom_point(aes(y = Log_Cum_Return_LRP), color = "darkgreen") +
-  ggtitle("Cumulative Return of Strategies (Log Scale)") +
-  xlab("Date") + ylab("Log Cumulative Return") +
-  theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
-  scale_x_discrete(breaks = FullPeriodBreaks) +  # Use your predefined breaks
-  annotate(geom="text", x="2018-01", y=1, label=paste("60/40"),
-           color="blue", size = 7) +
-  annotate(geom="text", x="2018-01", y=0.7, label=paste("MVO"),
-           color="red", size = 7) +
-  annotate(geom="text", x="2018-01", y=1.5, label=paste("MVO+L"),
-           color="green", size = 7) +
-  annotate(geom="text", x="2018-01", y=1.7, label=paste("MVO (unrestricted)"),
-           color="pink", size = 7) +
-  annotate(geom="text", x="2018-01", y=1.7, label=paste("LRP"),
-           color="darkgreen", size = 7)
-
-
-
-
-
-###################################### Covid Plot ########################################
-
-# Convert Date to factor to keep it as "YYYY-MM"
-Covid$Date <- factor(Covid$Date)
-# Get labels for every 5th year (e.g., "1990-01", "1995-01", etc.)
-CovidBreaks <- Covid$Date[seq(1, length(Covid$Date), by = 12 * 1)]  # every 5 years
-
-
-# Backtest: 60% in RF and 40% in Bonds
-Covid <- Covid %>%
-  mutate(Strategy_60_40 = 0.6 * Equity + 0.4 * Bonds, ### 60/40
-         Cum_Return_60_40 = cumprod(1 + Strategy_60_40), ### 60/40
-         Log_Cum_Return_60_40 = log(Cum_Return_60_40), ### 60/40
-         Strategy_MVO_Unrestricted = optimal_weights_leverage[1] * Equity + optimal_weights_leverage[2] * Bonds, ### MVO unrestricted
-         Cum_Return_MVO_Unrestricted = cumprod(1 + Strategy_MVO_Unrestricted), ### MVO unrestricted
-         Log_Cum_Return_MVO_Unrestricted = log(Cum_Return_MVO_Unrestricted), ### MVO unrestricted
-         Strategy_MVO = optimal_weights[1] * Equity + optimal_weights[2] * Bonds, ### MVO
-         Cum_Return_MVO = cumprod(1 + Strategy_MVO), ### MVO
-         Log_Cum_Return_MVO = log(Cum_Return_MVO), ### MVO
-         Strategy_MVOL = optimal_weights_leverage_fixed[1] * Equity + optimal_weights_leverage_fixed[2] * Bonds, ### MVO+L
-         Cum_Return_MVOL = cumprod(1 + Strategy_MVOL), ### MVO+L
-         Log_Cum_Return_MVOL = log(Cum_Return_MVOL), ### MVO+L
-         Strategy_LRP = optimal_weights_LRP[1] * Equity + optimal_weights_LRP[2] * Bonds, ### LRP
-         Cum_Return_LRP = cumprod(1 + Strategy_LRP), ### LRP
-         Log_Cum_Return_LRP = log(Cum_Return_LRP)) ### LRP
-
-
-# Plot the cumulative return with manually specified breaks
-ggplot(Covid, aes(x = Date)) +
-  ### 60/40
-  geom_line(aes(y = Log_Cum_Return_60_40, group = 1), color = "blue") +
-  geom_point(aes(y = Log_Cum_Return_60_40), color = "blue") +
-  ### MVO (unrestricted)
-  geom_line(aes(y = Log_Cum_Return_MVO_Unrestricted, group = 2), color = "pink") +
-  geom_point(aes(y = Log_Cum_Return_MVO_Unrestricted), color = "pink") +
-  ### MVO
-  geom_line(aes(y = Log_Cum_Return_MVO, group = 2), color = "red") +
-  geom_point(aes(y = Log_Cum_Return_MVO), color = "red") +
-  ### MVO+L
-  geom_line(aes(y = Log_Cum_Return_MVOL, group = 2), color = "green") +
-  geom_point(aes(y = Log_Cum_Return_MVOL), color = "green") +
-  ### LRP
-  geom_line(aes(y = Log_Cum_Return_LRP, group = 2), color = "darkgreen") +
-  geom_point(aes(y = Log_Cum_Return_LRP), color = "darkgreen") +
-  ggtitle("Cumulative Return of Strategies (Log Scale)") +
-  xlab("Date") + ylab("Log Cumulative Return") +
-  theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
-  scale_x_discrete(breaks = FullPeriodBreaks) +  # Use your predefined breaks
-  annotate(geom="text", x="2022-01", y=1, label=paste("60/40"),
-           color="blue", size = 7) +
-  annotate(geom="text", x="2022-01", y=0.7, label=paste("MVO"),
-           color="red", size = 7) +
-  annotate(geom="text", x="2022-01", y=1.5, label=paste("MVO+L"),
-           color="green", size = 7) +
-  annotate(geom="text", x="2022-01", y=1.7, label=paste("MVO (unrestricted)"),
-           color="pink", size = 7) +
-  annotate(geom="text", x="2022-01", y=1.7, label=paste("LRP"),
-           color="darkgreen", size = 7)
 
