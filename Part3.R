@@ -187,8 +187,8 @@ cat("Volatility of stocks (without fees): ", sigma_S, "\n")  # Volatility withou
 ####################################################################################################################
 ####################################################################################################################
 
-#sequence of overlay sizes (1% to 50%)
-overlay_sizes <- seq(0.01, 0.50, by = 0.01)
+#sequence of overlay sizes (0.1% to 50% by 0.01% increments)
+overlay_sizes <- seq(0.001, 0.50, by = 0.001)
 
 # vectors to store
 expected_returns_net <- c()
@@ -263,3 +263,8 @@ ggplot(results, aes(x = Overlay_Size, y = Sharpe_Ratio)) +
   
   theme_minimal() +
   theme(plot.title = element_text(hjust = 0.5, size = 14))
+
+results[402,]
+results[415,]
+# The target is hit at 40.2% with Sharpe ratio 0.1271763 and expected return 0.007502576
+# but the maximum Sharpe ratio is 0.1271989 at overlay 41.5% with expected return 0.007536794
