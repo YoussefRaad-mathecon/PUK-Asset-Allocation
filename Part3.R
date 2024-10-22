@@ -187,8 +187,8 @@ cat("Volatility of stocks (without fees): ", sigma_S, "\n")  # Volatility withou
 ####################################################################################################################
 ####################################################################################################################
 
-#sequence of overlay sizes (0.1% to 50% by incrememnts of 0.1%)
-overlay_sizes <- seq(0.001, 0.50, by = 0.001)
+#sequence of overlay sizes (1% to 50%)
+overlay_sizes <- seq(0.01, 0.50, by = 0.01)
 
 # vectors to store
 expected_returns_net <- c()
@@ -263,6 +263,3 @@ ggplot(results, aes(x = Overlay_Size, y = Sharpe_Ratio)) +
   
   theme_minimal() +
   theme(plot.title = element_text(hjust = 0.5, size = 14))
-
-
-print(results)
