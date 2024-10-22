@@ -165,4 +165,92 @@ sigma_S_net <- sd(MarketReturn$Net_Portfolio_Return)  # Volatility of stocks aft
 
 # Print the updated results
 cat("Expected return of stocks (with overlay and fees): ", E_R_S_net, "\n")
-cat("Volatility of stocks (with overlay and fees): ", sigma_S_net, "\n")
+cat("Volatility of stocks (with overlay and fees): ", sigma_S_net, "\n") #
+
+
+
+
+
+
+####################################################################################################################
+####################################################################################################################
+#----------------------------------------- D+E -------------------------------------------------------------------
+####################################################################################################################
+####################################################################################################################
+
+#sequence of overlay sizes (1% to 50%)
+overlay_sizes <- seq(0.01, 0.50, by = 0.01)
+
+# vectors to store
+expected_returns_net <- c()
+volatilities_net <- c()
+
+
+# Function to calculate values for different overlay sizes.
+for (size in overlay_sizes) {
+  # to use different sizes
+  long_percentage <- size
+  short_percentage <- size
+  
+  # Recalculate portfolio returns with the new overlay size. We assume it is
+  # not a tilt but a over-exposure to 100%+
+  MarketReturn <- MarketReturn %>%
+    mutate(
+      Long_Returns = BIG.HiPRIOR * long_percentage,
+      Short_Returns = BIG.LoPRIOR * -short_percentage,
+      New_Portfolio_Returns = (Long_Returns + Short_Returns) / 100,
+      MarketAssumptions = AverageReturn + New_Portfolio_Returns,
+      Excess_Return = MarketAssumptions - hurdle_rate,
+      Performance_Fee = pmax(Excess_Return, 0) * 0.1,
+      Total_Fee = fixed_fee + Performance_Fee,
+      Net_Portfolio_Return = MarketAssumptions - Total_Fee
+    )
+  
+  # expected return and volatility
+  E_R_S_net <- mean(MarketReturn$Net_Portfolio_Return)
+  sigma_S_net <- sd(MarketReturn$Net_Portfolio_Return)
+  
+  # store for later
+  expected_returns_net <- c(expected_returns_net, E_R_S_net)
+  volatilities_net <- c(volatilities_net, sigma_S_net)
+}
+
+# combine results 
+results <- data.frame(
+  Overlay_Size = overlay_sizes,
+  Expected_Return = expected_returns_net,
+  Volatility = volatilities_net
+)
+
+
+
+# Find Sharpe Ratios (we still assume RF should be included)
+sharpe_ratios <- (expected_returns_net - mean(RF)) / volatilities_net
+results <- cbind(results, Sharpe_Ratio = sharpe_ratios)
+
+
+# Find the overlay size with the maximum Sharpe ratio for the plot
+max_sharpe_idx <- which.max(sharpe_ratios)
+max_sharpe_ratio <- sharpe_ratios[max_sharpe_idx]
+max_overlay_size <- overlay_sizes[max_sharpe_idx]
+ggplot(results, aes(x = Overlay_Size, y = Sharpe_Ratio)) +
+  geom_line(color = "blue") +
+  
+  # Max Sharpe line
+  geom_vline(xintercept = max_overlay_size, linetype = "dashed", color = "red") +
+  
+  annotate("text", x = max_overlay_size, y = max_sharpe_ratio + 0.02, 
+           label = paste("Max Sharpe:", round(max_sharpe_ratio, 4)), 
+           color = "red", size = 4, vjust = 12, hjust = 1.2) +
+  
+  # Professional annotation for overlay size, expected return, and volatility
+  annotate("text", x = 0.41, y = 0.12, 
+           label = " Overlay Size: 41%\nReturn: 0.752%\n Volatility: 4.23%", 
+           color = "darkgreen", size = 4, hjust = -0.1) +
+  
+  ggtitle("Sharpe Ratio vs. Overlay Size") +
+  xlab("Overlay Size") +
+  ylab("Sharpe Ratio") +
+  
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, size = 14))
