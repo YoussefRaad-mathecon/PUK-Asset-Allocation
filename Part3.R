@@ -159,17 +159,26 @@ MarketReturn <- MarketReturn %>%
     Net_Portfolio_Return = MarketAssumptions - Total_Fee
   )
 
-# Recalculate the expected return and volatility with the adjusted returns
-E_R_S_net <- mean(MarketReturn$Net_Portfolio_Return)  # Expected return of stocks after fees
-sigma_S_net <- sd(MarketReturn$Net_Portfolio_Return)  # Volatility of stocks after fees
 
-# Print the updated results
-cat("Expected return of stocks (with overlay and fees): ", E_R_S_net, "\n")
-cat("Volatility of stocks (with overlay and fees): ", sigma_S_net, "\n") #
+# Calculate average total fees
+average_fixed_fee <- mean(rep(fixed_fee, nrow(MarketReturn)))  # Fixed fee is constant
+average_performance_fee <- mean(MarketReturn$Performance_Fee, na.rm = TRUE)  # Average performance fee
+average_total_fee <- average_fixed_fee + average_performance_fee  # Total average fee
 
+# Calculate net expected return after fees
+E_R_S_net_final <- mean(MarketReturn$Net_Portfolio_Return, na.rm = TRUE)  # Expected return after fees
 
+# Calculate net volatility after fees
+sigma_S_net_final <- sd(MarketReturn$Net_Portfolio_Return, na.rm = TRUE)  # Volatility after fees
 
+# Print the updated results for comparison
+cat("Average Total Fee (per month): ", average_total_fee, "\n")
+cat("Expected return of stocks (with overlay and fees): ", E_R_S_net_final, "\n")
+cat("Volatility of stocks (with overlay and fees): ", sigma_S_net_final, "\n")
 
+# Compare with previous expected return and volatility
+cat("Expected return of stocks (without fees): ", E_R_S, "\n")  # Expected return without fees
+cat("Volatility of stocks (without fees): ", sigma_S, "\n")  # Volatility without fees
 
 
 ####################################################################################################################
