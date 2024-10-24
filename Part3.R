@@ -22,11 +22,9 @@ library(mice) ### Single imputation
 #----------------------------------- Working Directory -------------------------------------------------------------
 ####################################################################################################################
 ####################################################################################################################
-
-
 set.seed(123)
-#setwd("~/Documents/KU/PUKAssetAllocation/Exam/RCode")
-setwd("C:/Users/youss/OneDrive - University of Copenhagen/PUK")
+setwd("~/Documents/KU/PUKAssetAllocation/Exam/RCode")
+#setwd("C:/Users/youss/OneDrive - University of Copenhagen/PUK")
 ####################################################################################################################
 ####################################################################################################################
 #------------------------------------------- A ---------------------------------------------------------------------
@@ -242,29 +240,39 @@ results <- cbind(results, Sharpe_Ratio = sharpe_ratios)
 max_sharpe_idx <- which.max(sharpe_ratios)
 max_sharpe_ratio <- sharpe_ratios[max_sharpe_idx]
 max_overlay_size <- overlay_sizes[max_sharpe_idx]
+risk <- volatilities_net[max_sharpe_idx] * sqrt(12)
 ggplot(results, aes(x = Overlay_Size, y = Sharpe_Ratio)) +
-  geom_line(color = "blue") +
+  geom_line(color = "#666666", linewidth = 3) +
   
   # Max Sharpe line
-  geom_vline(xintercept = max_overlay_size, linetype = "dashed", color = "red") +
+  geom_vline(xintercept = max_overlay_size, linetype = "dashed", color = "#901a1E", linewidth = 3) +
   
   annotate("text", x = max_overlay_size, y = max_sharpe_ratio + 0.02, 
-           label = paste("Max Sharpe:", round(max_sharpe_ratio, 4)), 
-           color = "red", size = 4, vjust = 12, hjust = 1.2) +
+           label = paste("Max Sharpe:", round(max_sharpe_ratio, 7)), 
+           color = "#901a1E", size = 13, vjust = 7, hjust = 1.1) +
   
   # Professional annotation for overlay size, expected return, and volatility
   annotate("text", x = 0.41, y = 0.12, 
-           label = " Overlay Size: 41%\nReturn: 0.752%\n Volatility: 4.23%", 
-           color = "darkgreen", size = 4, hjust = -0.1) +
+           label = " Overlay Size: 41.5%\nReturn: 75.36794bps\n Risk: 14.7%", 
+           color = "darkgreen", size = 13, hjust = 1.1, vjust = 1.3) +
   
   ggtitle("Sharpe Ratio vs. Overlay Size") +
   xlab("Overlay Size") +
   ylab("Sharpe Ratio") +
   
   theme_minimal() +
-  theme(plot.title = element_text(hjust = 0.5, size = 14))
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 27),  # Title size
+    axis.title.x = element_text(size = 23),  # X-axis label size
+    axis.title.y = element_text(size = 23),  # Y-axis label size
+    axis.text.x = element_text(size = 17),   # X-axis tick label size
+    axis.text.y = element_text(size = 17)
+  )
 
 results[402,]
 results[415,]
 # The target is hit at 40.2% with Sharpe ratio 0.1271763 and expected return 0.007502576
 # but the maximum Sharpe ratio is 0.1271989 at overlay 41.5% with expected return 0.007536794
+
+
+
