@@ -466,20 +466,28 @@ portfolio_VW <- portfolio_stats(w_VW, cov_matrix, expected_returns)
 # Combine results into a data frame for easy plotting
 portfolio_names <- c("60/40", "MVO", "LMVO", "LRP", "VW")
 portfolio_points <- data.frame(
-  Name = portfolio_names,
+  Strategy = portfolio_names,
   Return = c(portfolio_60_40[1], portfolio_MVO[1], portfolio_LMVO[1], portfolio_LRP[1], portfolio_VW[1]),
   Volatility = c(portfolio_60_40[2], portfolio_MVO[2], portfolio_LMVO[2], portfolio_LRP[2], portfolio_VW[2])
 )
 
+
+
 # Plot both the random portfolios and the specified portfolios (without the efficient frontier line)
 ggplot(portfolio_df, aes(x = Volatility, y = Return)) +
-  geom_point(color = "blue", alpha = 0.5) +  
-  geom_point(data = portfolio_points, aes(x = Volatility, y = Return, color = Name), size = 3) + 
+  geom_point(color = "#666666", alpha = 0.3) +  
+  geom_point(data = portfolio_points, aes(x = Volatility, y = Return, color = Strategy), size = 7) + 
   labs(title = "Efficient Frontier - Great Recession Recovery",
        x = "Volatility (Standard Deviation of Returns)",
        y = "Expected Return") +
-  scale_color_manual(values = c("red", "green", "purple", "cyan", "magenta")) +  
-  theme_minimal()
-
-
-                                  
+  scale_color_manual(values = c("firebrick", "darkgreen", "purple", "salmon", "orange")) +  
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 27),  # Title size
+    axis.title.x = element_text(size = 23),  # X-axis label size
+    axis.title.y = element_text(size = 23),  # Y-axis label size
+    axis.text.x = element_text(size = 17),   # X-axis tick label size
+    axis.text.y = element_text(size = 17),
+    legend.title = element_text(size = 20),  # Legend title size
+    legend.text = element_text(size = 17)    # Legend text size
+  )
