@@ -265,7 +265,7 @@ max_overlay_size <- overlay_sizes[max_sharpe_idx]
 min_volatility <- results[min_volatility_idx, ]
 max_return <- results[max_return_idx, ]
 
-# Plotting
+# Plotting with additional annotation for index 397
 ggplot(results, aes(x = Overlay_Size, y = Sharpe_Ratio)) +
   geom_line(color = "#666666", linewidth = 3) +
   
@@ -275,11 +275,10 @@ ggplot(results, aes(x = Overlay_Size, y = Sharpe_Ratio)) +
   # Min Volatility line
   geom_vline(xintercept = min_volatility$Overlay_Size, linetype = "dotted", color = "#1A1E90", linewidth = 3) +
   
-  # Annotation for Max Sharpe Ratio
-  annotate("text", x = max_sharpe$Overlay_Size, y = max_sharpe$Sharpe_Ratio + 0.02, 
-           label = paste("Max Sharpe:", round(max_sharpe$Sharpe_Ratio, 7)), 
-           color = "#901a1E", size = 13, vjust = 7, hjust = 1.1) +
+  # Line where Sharpe falls below minimum volatility's Sharpe
+  geom_vline(xintercept = results$Overlay_Size[397], linetype = "dotdash", color = "#1E901A", linewidth = 3) +
   
+
   # Annotation for Minimum Volatility
   annotate("text", x = min_volatility$Overlay_Size, y = 0.1, 
            label = paste("Min Volatility:", 
@@ -293,7 +292,15 @@ ggplot(results, aes(x = Overlay_Size, y = Sharpe_Ratio)) +
            label = paste("Overlay Size:", round(max_sharpe$Overlay_Size * 100, 1), "%",
                          "\nReturn:", round(max_sharpe$Expected_Return * 10000, 5), "bps",  
                          "\nRisk:", round(max_sharpe$Risk_Annualized * 100, 4), "%"), 
-           color = "darkgreen", size = 13, hjust = 1.1, vjust = 1.3) +
+           color = "#901a1E", size = 13, hjust = 1.1, vjust = 1.3) +
+  
+  # Annotation for the Sharpe Ratio falling below min volatility Sharpe at Overlay_Size 0.397
+  annotate("text", x = results$Overlay_Size[397], y = results$Sharpe_Ratio[397] - 0.02, 
+           label = paste("Sharpe Ratio dips below Min Volatility's Sharpe:\n",
+                         "Overlay Size:", round(results$Overlay_Size[397], 3),
+                         "\nReturn:", round(results$Expected_Return[397] * 10000, 5), "bps", 
+                         "\nRisk:", round(results$Risk_Annualized[397] * 100, 4), "%"), 
+           color = "#1E901A", size = 13, vjust = -1, hjust = -0.1) +
   
   ggtitle("Sharpe Ratio vs. Overlay Size") +
   xlab("Overlay Size") +
@@ -309,12 +316,22 @@ ggplot(results, aes(x = Overlay_Size, y = Sharpe_Ratio)) +
   )
 
 
+
 # Print key results
 cat("Overlay Size with Least Volatility:\n")
 print(min_volatility)
 
-cat("\nOverlay Size with Most Expected Return:\n")
-print(max_return)
-
 cat("\nOverlay Size with Most Sharpe Ratio:\n")
 print(results[max_sharpe_idx, ])
+
+# Sharpe ratio at minimum volatility overlay size
+min_volatility_sharpe_ratio <- results$Sharpe_Ratio[min_volatility_idx]
+
+# Find index where Sharpe ratio first falls below this threshold
+falling_sharpe_idx <- which(results$Sharpe_Ratio[min_volatility_idx:length(sharpe_ratios)] < min_volatility_sharpe_ratio)[1] + min_volatility_idx - 1
+
+cat("Index where Sharpe ratio first falls below the Sharpe ratio at minimum volatility:", falling_sharpe_idx, "\n")
+cat("Overlay Size:", results$Overlay_Size[falling_sharpe_idx], "\n")
+cat("Sharpe Ratio at that point:", results$Sharpe_Ratio[falling_sharpe_idx], "\n")
+
+
