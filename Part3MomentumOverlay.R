@@ -22,9 +22,11 @@ library(mice) ### Single imputation
 #----------------------------------- Working Directory -------------------------------------------------------------
 ####################################################################################################################
 ####################################################################################################################
+
+
 set.seed(123)
-setwd("~/Documents/KU/PUKAssetAllocation/Exam/RCode")
-#setwd("C:/Users/youss/OneDrive - University of Copenhagen/PUK")
+#setwd("~/Documents/KU/PUKAssetAllocation/Exam/RCode")
+setwd("C:/Users/youss/OneDrive - University of Copenhagen/PUK")
 ####################################################################################################################
 ####################################################################################################################
 #------------------------------------------- A ---------------------------------------------------------------------
@@ -73,10 +75,6 @@ E_R_B <- mean(Bonds)  # Average bond return
 E_R_C <- mean(RF)  # Expected return for cash
 
 
-# Use value-weighted monthly returns dataset
-low_momentum <- MOMdep_Average_Value_Weighted_Returns_Monthly_part3$`BIG LoPRIOR`
-high_momentum <- MOMdep_Average_Value_Weighted_Returns_Monthly_part3$`BIG HiPRIOR`
-
 
 # Define overlay percentages
 short_percentage <- 0.25
@@ -115,6 +113,8 @@ cov_matrix <- matrix(c(sigma_S^2, cov_S_B, cov_S_C,
                        cov_S_B, sigma_B^2, cov_B_C,
                        cov_S_C, cov_B_C, sigma_C^2), nrow = 3)
 
+
+
 # Define expected returns vector
 expected_returns <- c(E_R_S, E_R_B, E_R_C)
 
@@ -143,25 +143,24 @@ cat("Covariance matrix: ", cov_matrix, "\n")
 hurdle_rate <- 0.01  # 100 bps
 fixed_fee <- 0.0015  # 15 bps 
 
-# Calculate the excess return over the hurdle for each period
+# Calculate the excess return over the hurdle for each period based only on overlay returns
 MarketReturn <- MarketReturn %>%
   mutate(
-    Excess_Return = MarketAssumptions - hurdle_rate,
-    Performance_Fee = pmax(Excess_Return, 0) * 0.1,  # 10% of the positive part of excess return
-    Total_Fee = fixed_fee + Performance_Fee  # Total fee for each period
+    Excess_Return_Overlay = (New_Portfolio_Returns - hurdle_rate),  # Only overlay return used for excess return
+    Performance_Fee_Overlay = pmax(Excess_Return_Overlay, 0) * 0.1,  # Fee on positive part of overlay excess return
+    Overlay_Total_Fee = fixed_fee + Performance_Fee_Overlay  # Total overlay fee per period
   )
 
-# Adjust returns by subtracting the fees
+# Adjust returns by subtracting only the overlay fees from the market + overlay combined return
 MarketReturn <- MarketReturn %>%
   mutate(
-    Net_Portfolio_Return = MarketAssumptions - Total_Fee
+    Net_Portfolio_Return = MarketAssumptions - Overlay_Total_Fee
   )
-
 
 # Calculate average total fees
 average_fixed_fee <- mean(rep(fixed_fee, nrow(MarketReturn)))  # Fixed fee is constant
-average_performance_fee <- mean(MarketReturn$Performance_Fee, na.rm = TRUE)  # Average performance fee
-average_total_fee <- average_fixed_fee + average_performance_fee  # Total average fee
+average_performance_fee <- mean(MarketReturn$Performance_Fee_Overlay, na.rm = TRUE)  # Average performance fee on overlay only
+average_total_fee <- average_fixed_fee + average_performance_fee  # Total average fee for overlay only
 
 # Calculate net expected return after fees
 E_R_S_net_final <- mean(MarketReturn$Net_Portfolio_Return, na.rm = TRUE)  # Expected return after fees
@@ -170,10 +169,20 @@ E_R_S_net_final <- mean(MarketReturn$Net_Portfolio_Return, na.rm = TRUE)  # Expe
 sigma_S_net_final <- sd(MarketReturn$Net_Portfolio_Return, na.rm = TRUE)  # Volatility after fees
 
 # Print the updated results for comparison
-cat("Average Total Fee (per month): ", average_total_fee, "\n")
+cat("Average Total Overlay Fee (per month): ", average_total_fee, "\n")
 cat("Expected return of stocks (with overlay and fees): ", E_R_S_net_final, "\n")
 cat("Volatility of stocks (with overlay and fees): ", sigma_S_net_final, "\n")
 
+# Calculate covariances
+cov_S_B_fee <- cov(MarketReturn$Net_Portfolio_Return, Bonds, use = "pairwise.complete.obs")
+cov_S_C_fee <- cov(MarketReturn$Net_Portfolio_Return, RF , use = "pairwise.complete.obs")
+cov_B_C_fee <- cov(Bonds, RF, use = "pairwise.complete.obs")
+
+# Define covariance matrix (3x3)
+cov_matrix_fee <- matrix(c(sigma_S_net_final^2, cov_S_B_fee, cov_S_C_fee,
+                           cov_S_B_fee, sigma_B^2, cov_B_C_fee,
+                           cov_S_C_fee, cov_B_C_fee, sigma_C^2), nrow = 3)
+print(cov_matrix_fee)
 # Compare with previous expected return and volatility
 cat("Expected return of stocks (without fees): ", E_R_S, "\n")  # Expected return without fees
 cat("Volatility of stocks (without fees): ", sigma_S, "\n")  # Volatility without fees
@@ -184,59 +193,68 @@ cat("Volatility of stocks (without fees): ", sigma_S, "\n")  # Volatility withou
 #----------------------------------------- D+E -------------------------------------------------------------------
 ####################################################################################################################
 ####################################################################################################################
-
-#sequence of overlay sizes (0.1% to 50% by 0.01% increments)
+# Define sequence of overlay sizes (0.1% to 50% by 0.01% increments)
 overlay_sizes <- seq(0.001, 0.50, by = 0.001)
 
-# vectors to store
+# Vectors to store results
 expected_returns_net <- c()
 volatilities_net <- c()
 
-
-# Function to calculate values for different overlay sizes.
+# Loop over different overlay sizes
 for (size in overlay_sizes) {
-  # to use different sizes
+  # Define long and short percentages
   long_percentage <- size
   short_percentage <- size
   
-  # Recalculate portfolio returns with the new overlay size. We assume it is
-  # not a tilt but a over-exposure to 100%+
+  # Calculate overlay returns separately
   MarketReturn <- MarketReturn %>%
     mutate(
       Long_Returns = BIG.HiPRIOR * long_percentage,
       Short_Returns = BIG.LoPRIOR * -short_percentage,
-      New_Portfolio_Returns = (Long_Returns + Short_Returns) / 100,
-      MarketAssumptions = AverageReturn + New_Portfolio_Returns,
-      Excess_Return = MarketAssumptions - hurdle_rate,
-      Performance_Fee = pmax(Excess_Return, 0) * 0.1,
-      Total_Fee = fixed_fee + Performance_Fee,
-      Net_Portfolio_Return = MarketAssumptions - Total_Fee
+      Overlay_Return = (Long_Returns + Short_Returns) / 100
     )
   
-  # expected return and volatility
+  # Calculate market assumptions (Market return plus overlay)
+  MarketReturn <- MarketReturn %>%
+    mutate(
+      MarketAssumptions = AverageReturn + Overlay_Return
+    )
+  
+  # Calculate fees based only on the overlay return
+  MarketReturn <- MarketReturn %>%
+    mutate(
+      Excess_Overlay_Return = Overlay_Return - hurdle_rate,
+      Overlay_Performance_Fee = pmax(Excess_Overlay_Return, 0) * 0.1,  # Fee on overlay return
+      Overlay_Total_Fee = fixed_fee + Overlay_Performance_Fee,
+      
+      # Net Portfolio Return after deducting the overlay fee from MarketAssumptions
+      Net_Portfolio_Return = MarketAssumptions - Overlay_Total_Fee
+    )
+  
+  # Expected return and volatility after fees
   E_R_S_net <- mean(MarketReturn$Net_Portfolio_Return)
   sigma_S_net <- sd(MarketReturn$Net_Portfolio_Return)
   
-  # store for later
+  # Store for later analysis
   expected_returns_net <- c(expected_returns_net, E_R_S_net)
   volatilities_net <- c(volatilities_net, sigma_S_net)
 }
 
-# combine results 
+# Combine results in a data frame
 results <- data.frame(
   Overlay_Size = overlay_sizes,
   Expected_Return = expected_returns_net,
   Volatility = volatilities_net
 )
 
+# Print results
+print(results)
 
-
-# Find Sharpe Ratios (we still assume RF should be included)
+# Calculate Sharpe Ratios, including RF
 sharpe_ratios <- (expected_returns_net - mean(RF)) / volatilities_net
 results <- cbind(results, Sharpe_Ratio = sharpe_ratios)
 
-
-# Find the overlay size with the maximum Sharpe ratio for the plot
+# Plotting
 max_sharpe_idx <- which.max(sharpe_ratios)
 max_sharpe_ratio <- sharpe_ratios[max_sharpe_idx]
 max_overlay_size <- overlay_sizes[max_sharpe_idx]
@@ -251,7 +269,7 @@ ggplot(results, aes(x = Overlay_Size, y = Sharpe_Ratio)) +
            label = paste("Max Sharpe:", round(max_sharpe_ratio, 7)), 
            color = "#901a1E", size = 13, vjust = 7, hjust = 1.1) +
   
-  # Professional annotation for overlay size, expected return, and volatility
+  # Annotation for overlay size, expected return, and volatility
   annotate("text", x = 0.41, y = 0.12, 
            label = " Overlay Size: 41.5%\nReturn: 75.36794bps\n Risk: 14.7%", 
            color = "darkgreen", size = 13, hjust = 1.1, vjust = 1.3) +
@@ -262,17 +280,36 @@ ggplot(results, aes(x = Overlay_Size, y = Sharpe_Ratio)) +
   
   theme_minimal() +
   theme(
-    plot.title = element_text(hjust = 0.5, size = 27),  # Title size
-    axis.title.x = element_text(size = 23),  # X-axis label size
-    axis.title.y = element_text(size = 23),  # Y-axis label size
-    axis.text.x = element_text(size = 17),   # X-axis tick label size
+    plot.title = element_text(hjust = 0.5, size = 27),  
+    axis.title.x = element_text(size = 23),  
+    axis.title.y = element_text(size = 23),  
+    axis.text.x = element_text(size = 17),   
     axis.text.y = element_text(size = 17)
   )
 
-results[402,]
-results[415,]
-# The target is hit at 40.2% with Sharpe ratio 0.1271763 and expected return 0.007502576
-# but the maximum Sharpe ratio is 0.1271989 at overlay 41.5% with expected return 0.007536794
 
+# Calculate Sharpe ratio for each overlay size
+results$Sharpe_Ratio <- (results$Expected_Return - mean(RF)) / results$Volatility
 
+# Find the overlay size with the least volatility
+min_volatility_idx <- which.min(results$Volatility)
+min_volatility <- results[min_volatility_idx, ]
+
+# Find the overlay size with the most expected return
+max_return_idx <- which.max(results$Expected_Return)
+max_return <- results[max_return_idx, ]
+
+# Find the overlay size with the highest Sharpe ratio
+max_sharpe_idx <- which.max(results$Sharpe_Ratio)
+max_sharpe <- results[max_sharpe_idx, ]
+
+# Print results
+cat("Overlay Size with Least Volatility:\n")
+print(min_volatility)
+
+cat("\nOverlay Size with Most Expected Return:\n")
+print(max_return)
+
+cat("\nOverlay Size with Most Sharpe Ratio:\n")
+print(max_sharpe)
 
