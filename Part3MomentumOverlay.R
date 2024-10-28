@@ -169,9 +169,9 @@ E_R_S_net_final <- mean(MarketReturn$Net_Portfolio_Return, na.rm = TRUE)  # Expe
 sigma_S_net_final <- sd(MarketReturn$Net_Portfolio_Return, na.rm = TRUE)  # Volatility after fees
 
 # Print the updated results for comparison
-cat("Average Total Overlay Fee (per month): ", average_total_fee, "\n")
-cat("Expected return of stocks (with overlay and fees): ", E_R_S_net_final, "\n")
-cat("Volatility of stocks (with overlay and fees): ", sigma_S_net_final, "\n")
+cat("Average Total Overlay Fee (per month): ", average_total_fee, "\n") # 0.001760509 
+cat("Expected return of stocks (with overlay and fees): ", E_R_S_net_final, "\n") # 0.008445098 
+cat("Volatility of stocks (with overlay and fees): ", sigma_S_net_final, "\n") # 0.04212489 
 
 # Calculate covariances
 cov_S_B_fee <- cov(MarketReturn$Net_Portfolio_Return, Bonds, use = "pairwise.complete.obs")
@@ -247,31 +247,52 @@ results <- data.frame(
   Volatility = volatilities_net
 )
 
-# Print results
-print(results)
+# Annualize the monthly volatility
+results$Risk_Annualized <- results$Volatility * sqrt(12)
 
 # Calculate Sharpe Ratios, including RF
-sharpe_ratios <- (expected_returns_net - mean(RF)) / volatilities_net
+sharpe_ratios <- (results$Expected_Return - mean(RF)) / results$Volatility
 results <- cbind(results, Sharpe_Ratio = sharpe_ratios)
 
-# Plotting
+# Find indices for max Sharpe, min volatility, and max return
 max_sharpe_idx <- which.max(sharpe_ratios)
+min_volatility_idx <- which.min(results$Volatility)
+max_return_idx <- which.max(results$Expected_Return)
+
+# Extract corresponding values
 max_sharpe_ratio <- sharpe_ratios[max_sharpe_idx]
 max_overlay_size <- overlay_sizes[max_sharpe_idx]
-risk <- volatilities_net[max_sharpe_idx] * sqrt(12)
+min_volatility <- results[min_volatility_idx, ]
+max_return <- results[max_return_idx, ]
+
+# Plotting
 ggplot(results, aes(x = Overlay_Size, y = Sharpe_Ratio)) +
   geom_line(color = "#666666", linewidth = 3) +
   
   # Max Sharpe line
-  geom_vline(xintercept = max_overlay_size, linetype = "dashed", color = "#901a1E", linewidth = 3) +
+  geom_vline(xintercept = max_sharpe$Overlay_Size, linetype = "dashed", color = "#901a1E", linewidth = 3) +
   
-  annotate("text", x = max_overlay_size, y = max_sharpe_ratio + 0.02, 
-           label = paste("Max Sharpe:", round(max_sharpe_ratio, 7)), 
+  # Min Volatility line
+  geom_vline(xintercept = min_volatility$Overlay_Size, linetype = "dotted", color = "#1A1E90", linewidth = 3) +
+  
+  # Annotation for Max Sharpe Ratio
+  annotate("text", x = max_sharpe$Overlay_Size, y = max_sharpe$Sharpe_Ratio + 0.02, 
+           label = paste("Max Sharpe:", round(max_sharpe$Sharpe_Ratio, 7)), 
            color = "#901a1E", size = 13, vjust = 7, hjust = 1.1) +
   
-  # Annotation for overlay size, expected return, and volatility
-  annotate("text", x = 0.41, y = 0.12, 
-           label = " Overlay Size: 41.5%\nReturn: 75.36794bps\n Risk: 14.7%", 
+  # Annotation for Minimum Volatility
+  annotate("text", x = min_volatility$Overlay_Size, y = 0.1, 
+           label = paste("Min Volatility:", 
+                         "Overlay Size:", round(min_volatility$Overlay_Size, 3), 
+                         "\nReturn:", round(min_volatility$Expected_Return * 10000, 5), "bps",  
+                         "\nRisk:", round(min_volatility$Risk_Annualized * 100, 4), "%"), 
+           color = "#1A1E90", size = 13, vjust = -0.5, hjust = 1.1) +
+  
+  # Annotation for overlay size, expected return, and risk for max Sharpe
+  annotate("text", x = max_sharpe$Overlay_Size, y = 0.12, 
+           label = paste("Overlay Size:", round(max_sharpe$Overlay_Size * 100, 1), "%",
+                         "\nReturn:", round(max_sharpe$Expected_Return * 10000, 5), "bps",  
+                         "\nRisk:", round(max_sharpe$Risk_Annualized * 100, 4), "%"), 
            color = "darkgreen", size = 13, hjust = 1.1, vjust = 1.3) +
   
   ggtitle("Sharpe Ratio vs. Overlay Size") +
@@ -288,22 +309,7 @@ ggplot(results, aes(x = Overlay_Size, y = Sharpe_Ratio)) +
   )
 
 
-# Calculate Sharpe ratio for each overlay size
-results$Sharpe_Ratio <- (results$Expected_Return - mean(RF)) / results$Volatility
-
-# Find the overlay size with the least volatility
-min_volatility_idx <- which.min(results$Volatility)
-min_volatility <- results[min_volatility_idx, ]
-
-# Find the overlay size with the most expected return
-max_return_idx <- which.max(results$Expected_Return)
-max_return <- results[max_return_idx, ]
-
-# Find the overlay size with the highest Sharpe ratio
-max_sharpe_idx <- which.max(results$Sharpe_Ratio)
-max_sharpe <- results[max_sharpe_idx, ]
-
-# Print results
+# Print key results
 cat("Overlay Size with Least Volatility:\n")
 print(min_volatility)
 
@@ -311,5 +317,4 @@ cat("\nOverlay Size with Most Expected Return:\n")
 print(max_return)
 
 cat("\nOverlay Size with Most Sharpe Ratio:\n")
-print(max_sharpe)
-
+print(results[max_sharpe_idx, ])
