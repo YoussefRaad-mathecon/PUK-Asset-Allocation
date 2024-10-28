@@ -334,4 +334,13 @@ cat("Index where Sharpe ratio first falls below the Sharpe ratio at minimum vola
 cat("Overlay Size:", results$Overlay_Size[falling_sharpe_idx], "\n")
 cat("Sharpe Ratio at that point:", results$Sharpe_Ratio[falling_sharpe_idx], "\n")
 
+# Print key results
+cat("Overlay Size with Least Volatility:\n")
+print(min_volatility)
 
+cat("\nOverlay Size with Most Sharpe Ratio:\n")
+print(results[max_sharpe_idx, ])
+
+results[203,] # minimum vol
+results[297,] # max sharpe
+results[397,] # sharpe ratio falls
