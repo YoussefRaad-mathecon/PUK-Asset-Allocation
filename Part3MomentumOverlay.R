@@ -256,6 +256,8 @@ results <- cbind(results, Sharpe_Ratio = sharpe_ratios)
 
 # Find indices for max Sharpe, min volatility, and max return
 max_sharpe_idx <- which.max(sharpe_ratios)
+max_sharpe <- results[max_sharpe_idx, ]  # Define max_sharpe as the row with maximum Sharpe Ratio
+
 min_volatility_idx <- which.min(results$Volatility)
 max_return_idx <- which.max(results$Expected_Return)
 
@@ -265,9 +267,6 @@ max_overlay_size <- overlay_sizes[max_sharpe_idx]
 min_volatility <- results[min_volatility_idx, ]
 max_return <- results[max_return_idx, ]
 
-# Find the index of the maximum Sharpe Ratio
-max_sharpe_idx <- which.max(results$Sharpe_Ratio)
-max_sharpe <- results[max_sharpe_idx, ]  # Define max_sharpe as the row with maximum Sharpe Ratio
 
 # Plotting with additional annotation for index 397
 ggplot(results, aes(x = Overlay_Size, y = Sharpe_Ratio)) +
