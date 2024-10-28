@@ -265,6 +265,10 @@ max_overlay_size <- overlay_sizes[max_sharpe_idx]
 min_volatility <- results[min_volatility_idx, ]
 max_return <- results[max_return_idx, ]
 
+# Find the index of the maximum Sharpe Ratio
+max_sharpe_idx <- which.max(results$Sharpe_Ratio)
+max_sharpe <- results[max_sharpe_idx, ]  # Define max_sharpe as the row with maximum Sharpe Ratio
+
 # Plotting with additional annotation for index 397
 ggplot(results, aes(x = Overlay_Size, y = Sharpe_Ratio)) +
   geom_line(color = "#666666", linewidth = 3) +
