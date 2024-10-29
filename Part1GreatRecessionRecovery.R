@@ -304,19 +304,22 @@ equality_constraint <- function(x) {
 x0 <- rep(0.5, n_assets)
 
 # Lower and upper bounds for weights
-lb <- c(0, 0, 0)  # Set minimum 10% allocation to cash
+lb <- rep(0, n_assets)  # No shorting (non-negative weights)
 ub <- rep(1.5, n_assets)  # Upper limit for weights (due to leverage constraint)
 
-# Optimization using nloptr with COBYLA method
 result_LRP <- nloptr(x0 = x0,
                      eval_f = function(x) objective_function(x, cov_matrix),
                      lb = lb,
                      ub = ub,
                      eval_g_ineq = inequality_constraint,  # Inequality constraints for leverage
                      eval_g_eq = equality_constraint,      # Target return constraint
-                     opts = list(algorithm = "NLOPT_LN_COBYLA",  # COBYLA method
+                     opts = list(algorithm = "NLOPT_LN_AUGLAG",  # AUGLAG method
                                  xtol_rel = 1.0e-8,  # Tolerance level
-                                 maxeval = 10000))   # Maximum number of iterations
+                                 maxeval = 10000,
+                                 local_opts = list(algorithm = "NLOPT_LN_NELDERMEAD",  # Local optimizer
+                                                   xtol_rel = 1.0e-8,  # Tolerance level
+                                                   maxeval = 1000)))   # Max iterations for local optimizer
+
 
 # Extract optimal weights
 optimal_weights_LRP <- result_LRP$solution
@@ -328,15 +331,14 @@ sigma_p_LRP <- sqrt(t(optimal_weights_LRP) %*% cov_matrix %*% optimal_weights_LR
 # Calculate Sharpe ratio
 Sharpe_ratio_LRP <- (E_R_p_LRP - E_R_C) / sigma_p_LRP
 
-
-
 # Print the results
 cat("LRP Stocks weight: ", optimal_weights_LRP[1], "\n") # 0.6480784 
-cat("LRP bonds weight: ", optimal_weights_LRP[2], "\n") # 0.8519216
-cat("LRP cash weight: ", optimal_weights_LRP[3], "\n") # 1.387779e-17
-cat("LRP portfolio volatility: ", sigma_p_LRP, "\n") # 0.02075251 
+cat("LRP bonds weight: ", optimal_weights_LRP[2], "\n") # 0.8519215
+cat("LRP cash weight: ", optimal_weights_LRP[3], "\n") # 0
+cat("LRP portfolio volatility: ", sigma_p_LRP, "\n") # 0.02075251
 cat("LRP expected return: ", E_R_p_LRP, "\n") # 0.0075 by construction
 cat("LRP Sharpe ratio: ", Sharpe_ratio_LRP, "\n") # 0.3449382 
+
 
 
 # Function to check f(x_star) = 0 condition
@@ -466,28 +468,19 @@ portfolio_VW <- portfolio_stats(w_VW, cov_matrix, expected_returns)
 # Combine results into a data frame for easy plotting
 portfolio_names <- c("60/40", "MVO", "LMVO", "LRP", "VW")
 portfolio_points <- data.frame(
-  Strategy = portfolio_names,
+  Name = portfolio_names,
   Return = c(portfolio_60_40[1], portfolio_MVO[1], portfolio_LMVO[1], portfolio_LRP[1], portfolio_VW[1]),
   Volatility = c(portfolio_60_40[2], portfolio_MVO[2], portfolio_LMVO[2], portfolio_LRP[2], portfolio_VW[2])
 )
 
-
-
 # Plot both the random portfolios and the specified portfolios (without the efficient frontier line)
 ggplot(portfolio_df, aes(x = Volatility, y = Return)) +
-  geom_point(color = "#666666", alpha = 0.3) +  
-  geom_point(data = portfolio_points, aes(x = Volatility, y = Return, color = Strategy), size = 7) + 
+  geom_point(color = "blue", alpha = 0.5) +  
+  geom_point(data = portfolio_points, aes(x = Volatility, y = Return, color = Name), size = 3) + 
   labs(title = "Efficient Frontier - Great Recession Recovery",
        x = "Volatility (Standard Deviation of Returns)",
        y = "Expected Return") +
-  scale_color_manual(values = c("firebrick", "darkgreen", "purple", "salmon", "orange")) +  
-  theme_minimal() +
-  theme(
-    plot.title = element_text(hjust = 0.5, size = 27),  # Title size
-    axis.title.x = element_text(size = 23),  # X-axis label size
-    axis.title.y = element_text(size = 23),  # Y-axis label size
-    axis.text.x = element_text(size = 17),   # X-axis tick label size
-    axis.text.y = element_text(size = 17),
-    legend.title = element_text(size = 20),  # Legend title size
-    legend.text = element_text(size = 17)    # Legend text size
-  )
+  scale_color_manual(values = c("red", "green", "purple", "cyan", "magenta")) +  
+  theme_minimal()
+
+
