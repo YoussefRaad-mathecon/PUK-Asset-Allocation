@@ -107,6 +107,8 @@ cov_matrix <- matrix(c(sigma_S^2, cov_S_B, cov_S_C,
                        cov_S_B, sigma_B^2, cov_B_C,
                        cov_S_C, cov_B_C, sigma_C^2), nrow = 3)
 
+
+
 # Define expected returns vector
 expected_returns <- c(E_R_S, E_R_B, E_R_C)
 
@@ -248,79 +250,83 @@ cat("LMVO Sharpe ratio: ", Sharpe_ratio_LMVO, "\n") # 0.6091265
 ####################################################################################################################
 ####################################################################################################################
 # Define expected returns and volatilities
-E_R_C <- mean(RF)  # Expected return for cash
-E_R_S <- mean(market_return)  # Expected return for stocks
-E_R_B <- mean(Bonds)  # Expected return for bonds
-sigma_C <- sd(RF)  # Volatility of cash
-sigma_S <- sd(market_return)  # Volatility of stocks
-sigma_B <- sd(Bonds)  # Volatility of bonds
+E_R_C <- mean(RF)   # Expected return for cash
+E_R_S <- mean(market_return)   # Expected return for stocks
+E_R_B <- mean(Bonds)   # Expected return for bonds
+sigma_C <- sd(RF)   # Volatility of cash
+sigma_S <- sd(market_return)   # Volatility of stocks
+sigma_B <- sd(Bonds)   # Volatility of bonds
 
 # Calculate covariances
 cov_S_B <- cov(market_return, Bonds, use = "pairwise.complete.obs")
 cov_S_C <- cov(market_return, RF, use = "pairwise.complete.obs")
 cov_B_C <- cov(Bonds, RF, use = "pairwise.complete.obs")
 
-# Covariance matrix
+# Define the updated covariance matrix (3x3) including cash
 cov_matrix <- matrix(c(sigma_S^2, cov_S_B, cov_S_C,
                        cov_S_B, sigma_B^2, cov_B_C,
                        cov_S_C, cov_B_C, sigma_C^2), nrow = 3)
-
-# Expected returns
+print(cov_matrix)
+# Define the expected returns vector for stocks, bonds, and cash
 expected_returns <- c(E_R_S, E_R_B, E_R_C)
 
-# Number of assets
+# Target return
+target_return <- 0.0075
+
+
+# Covariance matrix (Dmat) and expected returns
+cov_matrix <- matrix(c(sigma_S^2, cov_S_B, cov_S_C,
+                       cov_S_B, sigma_B^2, cov_B_C,
+                       cov_S_C, cov_B_C, sigma_C^2), nrow = 3)
+expected_returns <- c(E_R_S, E_R_B, E_R_C)
+
+# Number of assets (stocks, bonds, cash)
 n_assets <- 3
-
-# Portfolio variance calculation
-portfolio_variance <- function(x, cov_matrix) {
-  return(as.numeric(t(x) %*% cov_matrix %*% x))
-}
-
-# Objective function to minimize (residual risk contributions)
+# Objective function for risk parity (simplified for optimizer stability)
 objective_function <- function(x, cov_matrix) {
   port_variance <- portfolio_variance(x, cov_matrix)
   marginal_contributions <- cov_matrix %*% x
   total_risk <- sqrt(port_variance)
   risk_contributions <- x * marginal_contributions / total_risk
   
-  f_val <- 0
-  for (i in 1:n_assets) {
-    for (j in 1:n_assets) {
-      f_val <- f_val + (risk_contributions[i] - risk_contributions[j])^2
-    }
-  }
+  # Calculate squared deviations of each risk contribution from the average
+  avg_risk_contrib <- mean(risk_contributions)
+  f_val <- sum((risk_contributions - avg_risk_contrib)^2)
   
   return(f_val)
 }
 
-# Inequality constraints: leverage between 1 and 1.5
-inequality_constraint <- function(x) {
-  return(c(sum(x) - 1.5,   # Upper bound on leverage
-           1 - sum(x)))    # Lower bound on leverage
-}
-
-# Equality constraint: target portfolio return equals 75bps
+# Equality constraint (target return close to 75 bps)
 equality_constraint <- function(x) {
-  return(sum(x * expected_returns) - 0.0075)  # Target return of 75 bps
+  return(sum(x * expected_returns) - 0.0075)
 }
 
-# Initial guess for the weights
-x0 <- rep(0.5, n_assets)
+# Adjusted initial guess (keeping leverage close to 1.5 but balanced)
+x0 <- c(0.5, 0.5, 0.5)
 
-# Lower and upper bounds for weights
-lb <- rep(0, n_assets)  # No shorting (non-negative weights)
-ub <- rep(1.5, n_assets)  # Upper limit for weights (due to leverage constraint)
+# Lower and upper bounds for weights (no shorting, max 1.5 for leverage)
+lb <- rep(0, n_assets)
+ub <- rep(1.5, n_assets)
 
-# Optimization using nloptr with COBYLA method
-result_LRP <- nloptr(x0 = x0,
-                     eval_f = function(x) objective_function(x, cov_matrix),
-                     lb = lb,
-                     ub = ub,
-                     eval_g_ineq = inequality_constraint,  # Inequality constraints for leverage
-                     eval_g_eq = equality_constraint,      # Target return constraint
-                     opts = list(algorithm = "NLOPT_LN_COBYLA",  # COBYLA method
-                                 xtol_rel = 1.0e-8,  # Tolerance level
-                                 maxeval = 10000))   # Maximum number of iterations
+# Optimizer setup
+result_LRP <- nloptr(
+  x0 = x0,
+  eval_f = function(x) objective_function(x, cov_matrix),
+  lb = lb,
+  ub = ub,
+  eval_g_ineq = inequality_constraint,
+  eval_g_eq = equality_constraint,
+  opts = list(
+    algorithm = "NLOPT_LN_AUGLAG",
+    xtol_rel = 1.0e-8,            # Higher precision for target return
+    maxeval = 50000,              # Allow more evaluations for convergence
+    local_opts = list(
+      algorithm = "NLOPT_LN_NELDERMEAD",
+      xtol_rel = 1.0e-8,
+      maxeval = 50000
+    )
+  )
+)
 
 # Extract optimal weights
 optimal_weights_LRP <- result_LRP$solution
@@ -332,33 +338,14 @@ sigma_p_LRP <- sqrt(t(optimal_weights_LRP) %*% cov_matrix %*% optimal_weights_LR
 # Calculate Sharpe ratio
 Sharpe_ratio_LRP <- (E_R_p_LRP - E_R_C) / sigma_p_LRP
 
-
 # Print the results
-cat("LRP Stocks weight: ", optimal_weights_LRP[1], "\n") # 0.1439084 
-cat("LRP bonds weight: ", optimal_weights_LRP[2], "\n") # 0.2135776 
-cat("LRP cash weight: ", optimal_weights_LRP[3], "\n") # 1.142514
-cat("LRP portfolio volatility: ", sigma_p_LRP, "\n") # 0.008135465
-cat("LRP expected return: ", E_R_p_LRP, "\n") # 0.0075 by construction
-cat("LRP Sharpe ratio: ", Sharpe_ratio_LRP, "\n") # 0.4283713 
+cat("LRP Stocks weight: ", optimal_weights_LRP[1], "\n") # 0.1439085 
+cat("LRP Bonds weight: ", optimal_weights_LRP[2], "\n") # 0.2135842 
+cat("LRP Cash weight: ", optimal_weights_LRP[3], "\n") # 1.142507 
+cat("LRP Portfolio Volatility: ", sigma_p_LRP, "\n") # 0.008135561 
+cat("LRP Expected Return: ", E_R_p_LRP, "\n") # 0.0075
+cat("LRP Sharpe Ratio: ", Sharpe_ratio_LRP, "\n") # 0.4283663
 
-# Function to check f(x_star) = 0 condition
-check_f_zero <- function(optimal_weights, cov_matrix) {
-  marginal_contributions <- cov_matrix %*% optimal_weights
-  total_risk <- sqrt(portfolio_variance(optimal_weights, cov_matrix))
-  risk_contributions <- optimal_weights * marginal_contributions / total_risk
-  
-  f_val_check <- 0
-  for (i in 1:n_assets) {
-    for (j in 1:n_assets) {
-      f_val_check <- f_val_check + (risk_contributions[i] - risk_contributions[j])^2
-    }
-  }
-  
-  return(f_val_check)
-}
-
-
-check_f_zero(optimal_weights_LRP, cov_matrix)
 
 #--------------------------------------------extra: VW port--------------------------------------------------------------#
 #Value-Weighted portfolio / Market Portfolio
@@ -467,28 +454,21 @@ portfolio_VW <- portfolio_stats(w_VW, cov_matrix, expected_returns)
 # Combine results into a data frame for easy plotting
 portfolio_names <- c("60/40", "MVO", "LMVO", "LRP", "VW")
 portfolio_points <- data.frame(
-  Strategy = portfolio_names,
+  Name = portfolio_names,
   Return = c(portfolio_60_40[1], portfolio_MVO[1], portfolio_LMVO[1], portfolio_LRP[1], portfolio_VW[1]),
   Volatility = c(portfolio_60_40[2], portfolio_MVO[2], portfolio_LMVO[2], portfolio_LRP[2], portfolio_VW[2])
 )
 
-
 # Plot both the random portfolios and the specified portfolios (without the efficient frontier line)
 ggplot(portfolio_df, aes(x = Volatility, y = Return)) +
-  geom_point(color = "#666666", alpha = 0.3) +  
-  geom_point(data = portfolio_points, aes(x = Volatility, y = Return, color = Strategy), size = 7) + 
+  geom_point(color = "blue", alpha = 0.5) +  
+  geom_point(data = portfolio_points, aes(x = Volatility, y = Return, color = Name), size = 3) + 
   labs(title = "Efficient Frontier - Roaring 90s",
        x = "Volatility (Standard Deviation of Returns)",
        y = "Expected Return") +
-  scale_color_manual(values = c("firebrick", "darkgreen", "purple", "salmon", "orange")) +  
-  theme_minimal() +
-  theme(
-    plot.title = element_text(hjust = 0.5, size = 27),  # Title size
-    axis.title.x = element_text(size = 23),  # X-axis label size
-    axis.title.y = element_text(size = 23),  # Y-axis label size
-    axis.text.x = element_text(size = 17),   # X-axis tick label size
-    axis.text.y = element_text(size = 17),
-    legend.title = element_text(size = 20),  # Legend title size
-    legend.text = element_text(size = 17)    # Legend text size
-  )
+  scale_color_manual(values = c("red", "green", "purple", "cyan", "magenta")) +  
+  theme_minimal()
+
+################################
+
 
